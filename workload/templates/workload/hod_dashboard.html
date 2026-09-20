@@ -1,0 +1,2395 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div
+    x-data="hodDashboard()"
+    x-init="init()"
+    class="min-h-screen bg-slate-50 text-slate-900"
+>
+    <!-- =========================================================
+         MOBILE SIDEBAR BACKDROP
+    ========================================================== -->
+    <div
+        x-show="sidebarMobileOpen"
+        x-cloak
+        x-transition.opacity
+        @click="sidebarMobileOpen = false"
+        class="fixed inset-0 z-40 bg-slate-950/50 md:hidden"
+    ></div>
+
+    <!-- =========================================================
+         SIDEBAR
+    ========================================================== -->
+    <aside
+        class="fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-all duration-300 md:shadow-sm"
+        :class="[
+            sidebarOpen ? 'md:w-[260px]' : 'md:w-[72px]',
+            sidebarMobileOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full md:translate-x-0'
+        ]"
+    >
+        <!-- Sidebar Header -->
+        <div class="flex h-20 shrink-0 items-center border-b border-slate-200 px-4">
+            <div class="flex min-w-0 flex-1 items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0D2C54] text-white shadow-sm">
+                    <span class="text-sm font-black">UTB</span>
+                </div>
+
+                <div
+                    x-show="sidebarOpen || sidebarMobileOpen"
+                    x-transition.opacity
+                    class="min-w-0"
+                >
+                    <p class="truncate text-sm font-extrabold text-[#0D2C54]">
+                        UTB Kigali
+                    </p>
+                    <p class="truncate text-xs text-slate-500">
+                        Academic Oversight
+                    </p>
+                </div>
+            </div>
+
+            <!-- Desktop Collapse -->
+            <button
+                type="button"
+                @click="sidebarOpen = !sidebarOpen"
+                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-[#0D2C54] md:flex"
+                :title="sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'"
+            >
+                <svg
+                    class="h-5 w-5 transition-transform duration-300"
+                    :class="sidebarOpen ? '' : 'rotate-180'"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                >
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 12H4"/>
+                </svg>
+            </button>
+
+            <!-- Mobile Close -->
+            <button
+                type="button"
+                @click="sidebarMobileOpen = false"
+                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 md:hidden"
+            >
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="flex-1 space-y-1 overflow-y-auto p-3">
+
+            <!-- Overview -->
+            <a
+                href="#overview"
+                @click="closeMobileSidebar()"
+                class="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    Overview & KPIs
+                </span>
+            </a>
+
+            <!-- Analytics -->
+            <a
+                href="#analytics"
+                @click="closeMobileSidebar()"
+                class="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V5M4 19h16"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16v-5M12 16V8M16 16v-7"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    Analytics & Graphs
+                </span>
+            </a>
+
+            <!-- Roster -->
+            <a
+                href="#roster"
+                @click="closeMobileSidebar()"
+                class="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-1a4 4 0 00-4-4h-1"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-1a4 4 0 014-4h1"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    Actual Workflow
+                </span>
+            </a>
+
+            <!-- AI Recommendations -->
+            <a
+                href="#ai-recommendations"
+                @click="closeMobileSidebar()"
+                class="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L8 21l4-2 4 2-1.75-4"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    AI Recommended Workflow
+                </span>
+            </a>
+
+            <!-- Extensions -->
+            <a
+                href="#extensions"
+                @click="closeMobileSidebar()"
+                class="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 12h18"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    Department Extensions
+                </span>
+            </a>
+
+            <div
+                x-show="sidebarOpen || sidebarMobileOpen"
+                x-transition.opacity
+                class="my-4 border-t border-slate-200"
+            ></div>
+
+            <!-- AI Allocation Shortcut -->
+            <button
+                type="button"
+                @click="allocationModal = true"
+                class="group flex w-full items-center gap-3 rounded-xl bg-[#0D2C54] px-3 py-3 text-left text-sm font-bold text-white shadow-sm transition hover:bg-[#123b6d]"
+            >
+                <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 12h18"/>
+                </svg>
+                <span x-show="sidebarOpen || sidebarMobileOpen" x-transition.opacity>
+                    AI Task Allocation
+                </span>
+            </button>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="border-t border-slate-200 p-3">
+            <div
+                class="flex items-center gap-3 rounded-xl bg-slate-50 p-3"
+                :class="sidebarOpen || sidebarMobileOpen ? '' : 'justify-center'"
+            >
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                    HOD
+                </div>
+
+                <div
+                    x-show="sidebarOpen || sidebarMobileOpen"
+                    x-transition.opacity
+                    class="min-w-0"
+                >
+                    <p class="truncate text-xs font-bold text-slate-800">
+                        Head of Department
+                    </p>
+                    <p class="truncate text-[11px] text-slate-500">
+                        Academic Management
+                    </p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+
+    <!-- =========================================================
+         MAIN AREA
+    ========================================================== -->
+    <div
+        class="min-h-screen transition-all duration-300"
+        :class="sidebarOpen ? 'md:ml-[260px]' : 'md:ml-[72px]'"
+    >
+
+        <!-- =====================================================
+             TOP HEADER
+        ====================================================== -->
+        <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+            <div class="flex min-h-20 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+
+                <div class="flex min-w-0 items-center gap-3">
+                    <!-- Mobile Menu -->
+                    <button
+                        type="button"
+                        @click="sidebarMobileOpen = true"
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50 md:hidden"
+                    >
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+
+                    <!-- Mobile Brand -->
+                    <div class="flex min-w-0 items-center gap-3 md:hidden">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0D2C54] text-xs font-black text-white">
+                            UTB
+                        </div>
+
+                        <div class="min-w-0">
+                            <p class="truncate text-sm font-extrabold text-[#0D2C54]">
+                                HOD Dashboard
+                            </p>
+                            <p class="truncate text-xs text-slate-500">
+                                Academic Oversight
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Page Title -->
+                    <div class="hidden min-w-0 md:block">
+                        <h1 class="truncate text-lg font-extrabold text-slate-900">
+                            Department Academic Oversight
+                        </h1>
+                        <p class="text-xs text-slate-500">
+                            Workload, burnout risk and academic workflow management
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex shrink-0 items-center gap-2 sm:gap-3">
+
+                    <!-- Trimester -->
+                    <div class="hidden items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-2 sm:flex">
+                        <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                        <span class="text-xs font-bold text-amber-800">
+                            2026 Trimester 1
+                        </span>
+                    </div>
+
+                    <!-- Role Switcher -->
+                    <div class="relative hidden sm:block">
+                        <label class="sr-only">Switch dashboard role</label>
+                        <select
+                            @change="switchRole($event)"
+                            class="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                        >
+                            <option value="hod" selected>HOD</option>
+                            <option value="lecturer">Lecturer</option>
+                        </select>
+                    </div>
+
+                    <!-- Profile -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button
+                            type="button"
+                            @click="open = !open"
+                            :aria-expanded="open"
+                            class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-2 shadow-sm transition hover:bg-slate-50"
+                        >
+                            <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#0D2C54] text-xs font-bold text-white">
+                                H
+                            </div>
+
+                            <div class="hidden text-left lg:block">
+                                <p class="text-xs font-bold text-slate-800">
+                                    HOD
+                                </p>
+                                <p class="text-[11px] text-slate-500">
+                                    Department Head
+                                </p>
+                            </div>
+
+                            <svg class="hidden h-4 w-4 text-slate-400 sm:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
+
+                        <div
+                            x-show="open"
+                            x-cloak
+                            @click.outside="open = false"
+                            @keydown.escape.window="open = false"
+                            x-transition.origin.top.right
+                            class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+                        >
+                            <div class="border-b border-slate-100 px-4 py-3">
+                                <p class="text-sm font-bold text-slate-900">Head of Department</p>
+                                <p class="text-xs text-slate-500">Academic Administration</p>
+                            </div>
+
+                            <div class="p-2">
+                                <a
+                                    href="#overview"
+                                    @click="open = false"
+                                    class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                    Dashboard
+                                </a>
+
+                                <a
+                                    href="#extensions"
+                                    @click="open = false"
+                                    class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                    Reports & Extensions
+                                </a>
+
+                                <a
+                                    href="{% url 'lecturer_dashboard' %}"
+                                    @click="open = false"
+                                    class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                    Lecturer View
+                                </a>
+
+                                <a
+                                    href="{% url 'logout' %}"
+                                    @click="open = false"
+                                    class="block rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+                                >
+                                    Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+
+        <!-- =====================================================
+             CONTENT
+        ====================================================== -->
+        <main class="mx-auto max-w-[1700px] space-y-8 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+
+            <!-- =================================================
+                 OVERVIEW
+            ================================================== -->
+            <section id="overview" class="scroll-mt-28">
+
+                <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                            <span class="h-2 w-2 rounded-full bg-blue-600"></span>
+                            Department Overview
+                        </div>
+
+                        <h2 class="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                            Academic Workload Dashboard
+                        </h2>
+
+                        <p class="mt-1 max-w-3xl text-sm text-slate-500">
+                            Monitor lecturer workload, burnout risk, grading pressure,
+                            thesis supervision and AI-supported academic resource allocation.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="allocationModal = true"
+                        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                    >
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M3 12h18"/>
+                        </svg>
+                        AI Task Allocation
+                    </button>
+                </div>
+
+
+                <!-- Critical Alert -->
+                <div class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex items-start gap-3">
+                            <div class="relative mt-0.5">
+                                <span class="absolute inline-flex h-3 w-3 animate-ping rounded-full bg-red-500 opacity-75"></span>
+                                <span class="relative inline-flex h-3 w-3 rounded-full bg-red-600"></span>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-extrabold text-red-900">
+                                    2 critical burnout alerts require attention
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-red-700">
+                                    AI analysis has identified lecturers whose workload currently
+                                    exceeds the institutional risk threshold.
+                                </p>
+                            </div>
+                        </div>
+
+                        <a
+                            href="#roster"
+                            class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+                        >
+                            Review roster
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+                    <!-- Total Lecturers -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    Total Lecturers
+                                </p>
+                                <p class="mt-2 text-3xl font-black text-slate-900">
+                                    8
+                                </p>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Active department staff
+                                </p>
+                            </div>
+
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-1a4 4 0 00-4-4h-1"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 20H4v-1a4 4 0 014-4h1"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 h-1.5 rounded-full bg-slate-100">
+                            <div class="h-1.5 w-[82%] rounded-full bg-blue-600"></div>
+                        </div>
+                    </div>
+
+
+                    <!-- Average Workload -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    Avg. Workload
+                                </p>
+                                <p class="mt-2 text-3xl font-black text-slate-900">
+                                    42.5
+                                    <span class="text-base font-bold text-slate-400">hrs</span>
+                                </p>
+                                <p class="mt-1 text-xs text-amber-600">
+                                    +2.5 hrs above baseline
+                                </p>
+                            </div>
+
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 h-1.5 rounded-full bg-slate-100">
+                            <div class="h-1.5 w-[89%] rounded-full bg-amber-500"></div>
+                        </div>
+                    </div>
+
+
+                    <!-- Burnout Alerts -->
+                    <div class="rounded-xl border border-red-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    Critical Burnout Alerts
+                                </p>
+                                <div class="mt-2 flex items-center gap-2">
+                                    <span class="relative flex h-3 w-3">
+                                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75"></span>
+                                        <span class="relative inline-flex h-3 w-3 rounded-full bg-red-600"></span>
+                                    </span>
+
+                                    <p class="text-3xl font-black text-red-600">
+                                        2
+                                    </p>
+                                </div>
+                                <p class="mt-1 text-xs text-red-600">
+                                    Requires immediate review
+                                </p>
+                            </div>
+
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 17h.01"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.6L2.8 17.5A2 2 0 004.5 20h15a2 2 0 001.7-2.5L13.7 4.6a2 2 0 00-3.4 0z"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Backlog -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    Academic Backlog
+                                </p>
+                                <p class="mt-2 text-3xl font-black text-slate-900">
+                                    14
+                                    <span class="text-base font-bold text-slate-400">days</span>
+                                </p>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Grading & thesis reviews
+                                </p>
+                            </div>
+
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3M16 7V3M4 11h16"/>
+                                    <rect x="4" y="5" width="16" height="16" rx="2"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 h-1.5 rounded-full bg-slate-100">
+                            <div class="h-1.5 w-[70%] rounded-full bg-slate-600"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =================================================
+                 ANALYTICS
+            ================================================== -->
+            <section id="analytics" class="scroll-mt-28">
+
+                <div class="mb-5">
+                    <h2 class="text-xl font-black text-slate-900">
+                        Analytics & Workload Distribution
+                    </h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Department-level workload distribution and weekly capacity comparison.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6 xl:grid-cols-5">
+
+                    <!-- Donut -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="font-bold text-slate-900">
+                                    Workload Distribution
+                                </h3>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Current lecturer risk categories
+                                </p>
+                            </div>
+
+                            <span class="rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">
+                                8 Staff
+                            </span>
+                        </div>
+
+                        <div id="workloadDonutChart" class="mt-4 min-h-[300px]"></div>
+
+                        <div class="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                            <div>
+                                <p class="text-xs text-slate-500">Low / Moderate</p>
+                                <p class="text-sm font-bold text-slate-800">4 lecturers</p>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-slate-500">High / Critical</p>
+                                <p class="text-sm font-bold text-red-600">4 lecturers</p>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Bar -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-3">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h3 class="font-bold text-slate-900">
+                                    Weekly Hours vs 40h Baseline
+                                </h3>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Teaching and academic workload by lecturer
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-4 text-xs">
+                                <span class="flex items-center gap-2 text-slate-500">
+                                    <span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span>
+                                    Weekly Hours
+                                </span>
+
+                                <span class="flex items-center gap-2 text-slate-500">
+                                    <span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
+                                    40h Baseline
+                                </span>
+                            </div>
+                        </div>
+
+                        <div id="weeklyHoursChart" class="mt-4 min-h-[330px]"></div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =================================================
+                 ROSTER / ACTUAL WORKFLOW
+            ================================================== -->
+            <section id="roster" class="scroll-mt-28">
+
+                <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-900">
+                            Actual Workflow & Lecturer Roster
+                        </h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Review current lecturer assignments, workload and AI-predicted burnout risk.
+                        </p>
+                    </div>
+
+                    <div class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600">
+                        <span x-text="filteredLecturers.length"></span>
+                        of
+                        <span x-text="lecturers.length"></span>
+                        lecturers displayed
+                    </div>
+                </div>
+
+
+                <div
+                    x-data="rosterFilters()"
+                    class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
+
+                    <!-- Filters -->
+                    <div class="border-b border-slate-200 p-4 sm:p-5">
+                        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+                            <!-- Search -->
+                            <div class="relative md:col-span-2 xl:col-span-1">
+                                <label class="sr-only">Search lecturer</label>
+                                <svg
+                                    class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <circle cx="11" cy="11" r="7"/>
+                                    <path stroke-linecap="round" d="M20 20l-4-4"/>
+                                </svg>
+
+                                <input
+                                    type="search"
+                                    x-model="search"
+                                    placeholder="Search name, speciality or ID..."
+                                    class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                                >
+                            </div>
+
+                            <!-- Department -->
+                            <select
+                                x-model="department"
+                                class="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                            >
+                                <option value="">All Departments</option>
+                                <option value="Computing">Computing</option>
+                                <option value="Business">Business</option>
+                                <option value="Tourism">Tourism</option>
+                            </select>
+
+                            <!-- Speciality -->
+                            <select
+                                x-model="speciality"
+                                class="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                            >
+                                <option value="">All Specialities</option>
+                                <option value="Software Engineering">Software Engineering</option>
+                                <option value="Information Systems">Information Systems</option>
+                                <option value="Data Science">Data Science</option>
+                                <option value="Business Administration">Business Administration</option>
+                            </select>
+
+                            <!-- Risk -->
+                            <select
+                                x-model="risk"
+                                class="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+                            >
+                                <option value="">All Risk Levels</option>
+                                <option value="Low">Low Risk</option>
+                                <option value="Moderate">Moderate Risk</option>
+                                <option value="High">High Risk</option>
+                                <option value="Critical">Critical Risk</option>
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-[1000px] w-full text-left">
+                            <thead class="bg-slate-50">
+                                <tr class="border-b border-slate-200">
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Lecturer
+                                    </th>
+
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Speciality
+                                    </th>
+
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Classes
+                                    </th>
+
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Weekly Hours
+                                    </th>
+
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Burnout Score
+                                    </th>
+
+                                    <th class="px-5 py-4 text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Risk
+                                    </th>
+
+                                    <th class="px-5 py-4 text-right text-xs font-extrabold uppercase tracking-wide text-slate-500">
+                                        Action
+                                    </th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-slate-100">
+
+                                <template x-for="lecturer in filteredLecturers" :key="lecturer.id">
+                                    <tr class="transition hover:bg-slate-50">
+
+                                        <td class="px-5 py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div
+                                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-black"
+                                                    :class="lecturer.risk === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'"
+                                                    x-text="lecturer.initials"
+                                                ></div>
+
+                                                <div>
+                                                    <p class="text-sm font-bold text-slate-900" x-text="lecturer.name"></p>
+                                                    <p class="text-xs text-slate-500" x-text="lecturer.id"></p>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-5 py-4">
+                                            <p class="text-sm font-medium text-slate-700" x-text="lecturer.speciality"></p>
+                                            <p class="mt-0.5 text-xs text-slate-400" x-text="lecturer.department"></p>
+                                        </td>
+
+                                        <td class="px-5 py-4">
+                                            <span
+                                                class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700"
+                                                x-text="lecturer.classes"
+                                            ></span>
+                                        </td>
+
+                                        <td class="px-5 py-4">
+                                            <div class="min-w-[130px]">
+                                                <div class="mb-1 flex items-center justify-between">
+                                                    <span class="text-sm font-bold text-slate-800" x-text="lecturer.hours + 'h'"></span>
+                                                    <span class="text-[11px] text-slate-400">/ 40h</span>
+                                                </div>
+
+                                                <div class="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                                                    <div
+                                                        class="h-full rounded-full"
+                                                        :class="lecturer.hours > 48 ? 'bg-red-500' : lecturer.hours > 40 ? 'bg-amber-500' : 'bg-blue-600'"
+                                                        :style="'width:' + Math.min((lecturer.hours / 55) * 100, 100) + '%'"
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <td class="px-5 py-4">
+                                            <span
+                                                class="text-sm font-black"
+                                                :class="lecturer.score >= 80 ? 'text-red-600' : lecturer.score >= 60 ? 'text-amber-600' : 'text-emerald-600'"
+                                                x-text="lecturer.score + '%'"
+                                            ></span>
+                                        </td>
+
+                                        <td class="px-5 py-4">
+                                            <span
+                                                class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold"
+                                                :class="{
+                                                    'bg-emerald-100 text-emerald-700': lecturer.risk === 'Low',
+                                                    'bg-blue-100 text-blue-700': lecturer.risk === 'Moderate',
+                                                    'bg-amber-100 text-amber-700': lecturer.risk === 'High',
+                                                    'bg-red-100 text-red-700': lecturer.risk === 'Critical'
+                                                }"
+                                                x-text="lecturer.risk"
+                                            ></span>
+                                        </td>
+
+                                        <td class="px-5 py-4 text-right">
+                                            <button
+                                                type="button"
+                                                @click="openLecturer(lecturer)"
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                                            >
+                                                Review
+                                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                                </svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+
+                                <tr x-show="filteredLecturers.length === 0">
+                                    <td colspan="7" class="px-5 py-12 text-center">
+                                        <div class="mx-auto max-w-sm">
+                                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <circle cx="11" cy="11" r="7"/>
+                                                    <path stroke-linecap="round" d="M20 20l-4-4"/>
+                                                </svg>
+                                            </div>
+
+                                            <p class="mt-3 text-sm font-bold text-slate-800">
+                                                No lecturers found
+                                            </p>
+
+                                            <p class="mt-1 text-xs text-slate-500">
+                                                Adjust your search or filter criteria.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =================================================
+                 AI RECOMMENDATIONS
+            ================================================== -->
+            <section id="ai-recommendations" class="scroll-mt-28">
+
+                <div class="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                            </svg>
+                            AI-Assisted Planning
+                        </div>
+
+                        <h2 class="text-xl font-black text-slate-900">
+                            Recommended Academic Workflow
+                        </h2>
+
+                        <p class="mt-1 max-w-3xl text-sm text-slate-500">
+                            Compare the current academic workflow with AI-generated workload
+                            redistribution recommendations.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="allocationModal = true"
+                        class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                    >
+                        Generate New Recommendation
+                    </button>
+                </div>
+
+
+                <!-- Workflow Comparison -->
+                <div id="workflow-comparison" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+                    <!-- Actual Workflow -->
+                    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                        <div class="border-b border-slate-200 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="font-black text-slate-900">
+                                        Actual Workflow
+                                    </h3>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Current assignments and workload distribution
+                                    </p>
+                                </div>
+
+                                <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">
+                                    Current
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 p-5">
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                            Course Load
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-slate-900">
+                                            24 active course assignments
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-amber-600">
+                                        42.5h avg.
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                            Thesis Supervision
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-slate-900">
+                                            18 active students
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-slate-700">
+                                        6 lecturers
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-red-200 bg-red-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-red-600">
+                                            Grading Overload
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-red-900">
+                                            2 lecturers above grading capacity
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-red-600">
+                                        +14 days
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- AI Recommended -->
+                    <div class="rounded-xl border border-blue-200 bg-white shadow-sm">
+                        <div class="border-b border-blue-100 bg-blue-50/60 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <h3 class="font-black text-blue-950">
+                                        AI Recommended Workflow
+                                    </h3>
+                                    <p class="mt-1 text-xs text-blue-700">
+                                        Proposed workload redistribution
+                                    </p>
+                                </div>
+
+                                <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-bold text-white">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
+                                    AI Plan
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4 p-5">
+
+                            <div class="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-blue-600">
+                                            Course Rebalancing
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-slate-900">
+                                            Move 2 modules to available capacity
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-emerald-600">
+                                        -6.5h
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-blue-100 bg-blue-50/40 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-blue-600">
+                                            Thesis Redistribution
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-slate-900">
+                                            Transfer 4 students to capacity-matched supervisors
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-emerald-600">
+                                        -3h
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">
+                                            Burnout Threshold
+                                        </p>
+                                        <p class="mt-1 text-sm font-bold text-emerald-900">
+                                            Critical staff projected below 40h
+                                        </p>
+                                    </div>
+
+                                    <span class="text-sm font-black text-emerald-700">
+                                        38–39h
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                @click="rebalancingModal = true"
+                                class="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                            >
+                                Apply AI Rebalancing Plan
+                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 6l6 6-6 6"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- AI Early Warnings -->
+                <div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+
+                    <div class="rounded-xl border border-red-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 17h.01"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.6L2.8 17.5A2 2 0 004.5 20h15a2 2 0 001.7-2.5L13.7 4.6a2 2 0 00-3.4 0z"/>
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-black text-slate-900">
+                                    Critical Workload
+                                </p>
+
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    UTB-LEC-012 is projected above the critical threshold.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    @click="allocationModal = true"
+                                    class="mt-3 text-xs font-bold text-blue-600 hover:text-blue-700"
+                                >
+                                    Reassign TA grading support →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="rounded-xl border border-amber-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-black text-slate-900">
+                                    Grading Pressure
+                                </p>
+
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Assignment grading demand is projected to rise this week.
+                                </p>
+
+                                <a
+                                    href="#extensions"
+                                    class="mt-3 inline-block text-xs font-bold text-blue-600 hover:text-blue-700"
+                                >
+                                    Review capacity →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="rounded-xl border border-blue-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p class="text-sm font-black text-slate-900">
+                                    AI Recommendation Ready
+                                </p>
+
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    A workload redistribution plan is available for review.
+                                </p>
+
+                                <button
+                                    type="button"
+                                    @click="rebalancingModal = true"
+                                    class="mt-3 text-xs font-bold text-blue-600 hover:text-blue-700"
+                                >
+                                    Review plan →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =================================================
+                 EXTENSIONS
+            ================================================== -->
+            <section id="extensions" class="scroll-mt-28">
+
+                <div class="mb-5">
+                    <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                        Department Management
+                    </div>
+
+                    <h2 class="text-xl font-black text-slate-900">
+                        Department Reports & Extensions
+                    </h2>
+
+                    <p class="mt-1 max-w-3xl text-sm text-slate-500">
+                        Additional tools for capacity planning, institutional workload
+                        budgeting, reporting and academic governance.
+                    </p>
+                </div>
+
+
+                <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+                    <!-- Leave & Capacity Planner -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="font-black text-slate-900">
+                                    Lecturer Leave & Capacity
+                                </h3>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Upcoming approved leave and coverage gaps
+                                </p>
+                            </div>
+
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3M16 7V3M4 11h16"/>
+                                    <rect x="4" y="5" width="16" height="16" rx="2"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 space-y-3">
+
+                            <div class="rounded-lg border border-slate-200 p-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">
+                                            Lecturer A
+                                        </p>
+                                        <p class="text-[11px] text-slate-500">
+                                            23–27 Sept 2026
+                                        </p>
+                                    </div>
+
+                                    <span class="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-bold text-amber-700">
+                                        2 gaps
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-lg border border-slate-200 p-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-800">
+                                            Lecturer B
+                                        </p>
+                                        <p class="text-[11px] text-slate-500">
+                                            05–09 Oct 2026
+                                        </p>
+                                    </div>
+
+                                    <span class="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                                        Covered
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="rounded-lg bg-slate-50 p-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-slate-600">
+                                        Projected coverage
+                                    </span>
+
+                                    <span class="text-sm font-black text-slate-900">
+                                        87%
+                                    </span>
+                                </div>
+
+                                <div class="mt-2 h-1.5 rounded-full bg-slate-200">
+                                    <div class="h-1.5 w-[87%] rounded-full bg-blue-600"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Overtime Budget -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="font-black text-slate-900">
+                                    Overtime & Budget Risk
+                                </h3>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Additional hours triggering overtime exposure
+                                </p>
+                            </div>
+
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-6">
+                            <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                                Extra teaching hours
+                            </p>
+
+                            <div class="mt-2 flex items-end gap-2">
+                                <p class="text-4xl font-black text-slate-900">
+                                    27.5
+                                </p>
+
+                                <p class="pb-1 text-sm font-bold text-amber-600">
+                                    hrs
+                                </p>
+                            </div>
+
+                            <div class="mt-4 h-2 rounded-full bg-slate-100">
+                                <div class="h-2 w-[68%] rounded-full bg-amber-500"></div>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-2 gap-3">
+                                <div class="rounded-lg bg-slate-50 p-3">
+                                    <p class="text-[11px] text-slate-500">
+                                        Estimated exposure
+                                    </p>
+                                    <p class="mt-1 text-sm font-black text-slate-900">
+                                        68%
+                                    </p>
+                                </div>
+
+                                <div class="rounded-lg bg-red-50 p-3">
+                                    <p class="text-[11px] text-red-600">
+                                        High-risk staff
+                                    </p>
+                                    <p class="mt-1 text-sm font-black text-red-700">
+                                        2
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Export Hub -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="font-black text-slate-900">
+                                    Export & Audit Hub
+                                </h3>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Reports for Academic Senate and HR review
+                                </p>
+                            </div>
+
+                            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 11l4 4 4-4"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 21h14"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 space-y-3">
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+                                <span class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                                        PDF
+                                    </span>
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-800">
+                                            Senate Workload Report
+                                        </span>
+                                        <span class="block text-[11px] text-slate-500">
+                                            Current trimester summary
+                                        </span>
+                                    </span>
+                                </span>
+
+                                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
+                            >
+                                <span class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-[10px] font-black text-emerald-700">
+                                        XLS
+                                    </span>
+
+                                    <span>
+                                        <span class="block text-sm font-bold text-slate-800">
+                                            HR Capacity Dataset
+                                        </span>
+                                        <span class="block text-[11px] text-slate-500">
+                                            Workload & overtime details
+                                        </span>
+                                    </span>
+                                </span>
+
+                                <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between rounded-xl bg-[#0D2C54] px-4 py-3 text-left text-white transition hover:bg-[#123b6d]"
+                            >
+                                <span class="flex items-center gap-3">
+                                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-xs font-bold">
+                                        AUD
+                                    </span>
+
+                                    <span>
+                                        <span class="block text-sm font-bold">
+                                            Generate Audit Package
+                                        </span>
+                                        <span class="block text-[11px] text-slate-300">
+                                            Compile department evidence
+                                        </span>
+                                    </span>
+                                </span>
+
+                                <svg class="h-4 w-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- =================================================
+                 FOOTER
+            ================================================== -->
+            <footer class="border-t border-slate-200 pt-6">
+                <div class="flex flex-col gap-2 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+                    <p>
+                        UTB Kigali · Academic Workload Optimization System
+                    </p>
+
+                    <p>
+                        2026 Trimester 1 · HOD Academic Oversight
+                    </p>
+                </div>
+            </footer>
+
+        </main>
+    </div>
+
+
+    <!-- =========================================================
+         LECTURER DETAIL MODAL
+    ========================================================== -->
+    <div
+        x-show="lecturerModal"
+        x-cloak
+        class="fixed inset-0 z-[70] flex items-center justify-center p-4"
+    >
+        <div
+            x-show="lecturerModal"
+            x-transition.opacity
+            @click="lecturerModal = false"
+            class="absolute inset-0 bg-slate-950/60"
+        ></div>
+
+        <div
+            x-show="lecturerModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+        >
+            <div class="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white p-5">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wide text-blue-600">
+                        Lecturer Review
+                    </p>
+
+                    <h3 class="mt-1 text-xl font-black text-slate-900">
+                        <span x-text="selectedLecturer.name || 'Lecturer Details'"></span>
+                    </h3>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        <span x-text="selectedLecturer.id || ''"></span>
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    @click="lecturerModal = false"
+                    class="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                >
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-5 p-5">
+
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] text-slate-500">Hours</p>
+                        <p class="mt-1 text-xl font-black text-slate-900">
+                            <span x-text="selectedLecturer.hours || 0"></span>h
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] text-slate-500">Classes</p>
+                        <p class="mt-1 text-xl font-black text-slate-900" x-text="selectedLecturer.classes || 0"></p>
+                    </div>
+
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] text-slate-500">Burnout</p>
+                        <p
+                            class="mt-1 text-xl font-black"
+                            :class="selectedLecturer.score >= 80 ? 'text-red-600' : 'text-amber-600'"
+                        >
+                            <span x-text="selectedLecturer.score || 0"></span>%
+                        </p>
+                    </div>
+
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-[11px] text-slate-500">Risk</p>
+                        <p class="mt-1 text-sm font-black text-slate-900" x-text="selectedLecturer.risk || '—'"></p>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 p-4">
+                    <h4 class="text-sm font-black text-slate-900">
+                        Current Academic Load
+                    </h4>
+
+                    <div class="mt-4 space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Teaching</span>
+                            <span class="font-bold text-slate-800">24 hrs</span>
+                        </div>
+
+                        <div class="h-2 rounded-full bg-slate-100">
+                            <div class="h-2 w-[60%] rounded-full bg-blue-600"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Grading</span>
+                            <span class="font-bold text-slate-800">9 hrs</span>
+                        </div>
+
+                        <div class="h-2 rounded-full bg-slate-100">
+                            <div class="h-2 w-[23%] rounded-full bg-amber-500"></div>
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Thesis supervision</span>
+                            <span class="font-bold text-slate-800">5 hrs</span>
+                        </div>
+
+                        <div class="h-2 rounded-full bg-slate-100">
+                            <div class="h-2 w-[13%] rounded-full bg-slate-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                        </svg>
+
+                        <div>
+                            <p class="text-sm font-bold text-blue-950">
+                                AI Recommendation
+                            </p>
+
+                            <p class="mt-1 text-xs leading-5 text-blue-800">
+                                Consider redistributing grading support and one low-complexity
+                                course assignment to reduce projected workload.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        @click="lecturerModal = false"
+                        class="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                        Close
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="lecturerModal = false; allocationModal = true"
+                        class="min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"
+                    >
+                        Review Allocation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+         AI TASK ALLOCATION MODAL
+    ========================================================== -->
+    <div
+        x-show="allocationModal"
+        x-cloak
+        class="fixed inset-0 z-[80] flex items-center justify-center p-4"
+    >
+        <div
+            x-show="allocationModal"
+            x-transition.opacity
+            @click="allocationModal = false"
+            class="absolute inset-0 bg-slate-950/60"
+        ></div>
+
+        <div
+            x-show="allocationModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            class="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white shadow-2xl"
+        >
+            <div class="border-b border-slate-200 p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <div class="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                            AI Assistant
+                        </div>
+
+                        <h3 class="text-xl font-black text-slate-900">
+                            Smart Task Allocation
+                        </h3>
+
+                        <p class="mt-1 text-sm text-slate-500">
+                            Generate a workload-aware academic allocation recommendation.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="allocationModal = false"
+                        class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                    >
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-5 p-5">
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+                    <div>
+                        <label class="mb-2 block text-xs font-bold text-slate-700">
+                            Module / Course
+                        </label>
+
+                        <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50">
+                            <option>BIT3102 — Advanced Database Systems</option>
+                            <option>BIT3204 — Software Engineering</option>
+                            <option>BIT3301 — Data Science</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-2 block text-xs font-bold text-slate-700">
+                            Thesis Cohort
+                        </label>
+
+                        <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50">
+                            <option>2026 — Final Year</option>
+                            <option>2026 — Third Year</option>
+                        </select>
+                    </div>
+                </div>
+
+
+                <div class="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/>
+                        </svg>
+
+                        <div>
+                            <p class="text-sm font-bold text-blue-950">
+                                AI matching criteria
+                            </p>
+
+                            <p class="mt-1 text-xs leading-5 text-blue-800">
+                                The recommendation considers speciality, current weekly
+                                workload, burnout risk, module difficulty and available capacity.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div>
+                    <div class="mb-3 flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-black text-slate-900">
+                                Recommended Lecturers
+                            </h4>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Ranked by workload compatibility
+                            </p>
+                        </div>
+
+                        <span class="rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                            AI Ready
+                        </span>
+                    </div>
+
+                    <div class="space-y-2">
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-4">
+                            <div class="flex items-center gap-3">
+                                <input
+                                    type="radio"
+                                    name="recommended_lecturer"
+                                    checked
+                                    class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                                >
+
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900">
+                                        Dr. Emmanuel N.
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        Software Engineering · 34.5h current
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="text-xs font-black text-emerald-600">
+                                91% match
+                            </span>
+                        </label>
+
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <input
+                                    type="radio"
+                                    name="recommended_lecturer"
+                                    class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                                >
+
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900">
+                                        Dr. Alice M.
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        Information Systems · 36.0h current
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="text-xs font-black text-blue-600">
+                                84% match
+                            </span>
+                        </label>
+
+
+                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
+                            <div class="flex items-center gap-3">
+                                <input
+                                    type="radio"
+                                    name="recommended_lecturer"
+                                    class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
+                                >
+
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900">
+                                        Prof. Daniel K.
+                                    </p>
+                                    <p class="text-xs text-slate-500">
+                                        Data Science · 38.5h current
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span class="text-xs font-black text-blue-600">
+                                78% match
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+
+                <div class="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+                    <button
+                        type="button"
+                        @click="allocationModal = false"
+                        class="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                        type="button"
+                        @click="allocationModal = false; rebalancingModal = true"
+                        class="min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"
+                    >
+                        Generate Allocation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- =========================================================
+         REBALANCING CONFIRMATION MODAL
+    ========================================================== -->
+    <div
+        x-show="rebalancingModal"
+        x-cloak
+        class="fixed inset-0 z-[90] flex items-center justify-center p-4"
+    >
+        <div
+            x-show="rebalancingModal"
+            x-transition.opacity
+            @click="rebalancingModal = false"
+            class="absolute inset-0 bg-slate-950/60"
+        ></div>
+
+        <div
+            x-show="rebalancingModal"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+            x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+            class="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+        >
+            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4M12 17h.01"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.3 4.6L2.8 17.5A2 2 0 004.5 20h15a2 2 0 001.7-2.5L13.7 4.6a2 2 0 00-3.4 0z"/>
+                </svg>
+            </div>
+
+            <h3 class="mt-4 text-xl font-black text-slate-900">
+                Apply AI Rebalancing Plan?
+            </h3>
+
+            <p class="mt-2 text-sm leading-6 text-slate-500">
+                This action will prepare the proposed course, grading and thesis
+                redistribution plan for application. Review the assignments before
+                making them effective in the academic workflow.
+            </p>
+
+            <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Course assignments</span>
+                        <span class="font-bold text-slate-800">2 changes</span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Thesis supervision</span>
+                        <span class="font-bold text-slate-800">4 students</span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Critical staff projected</span>
+                        <span class="font-bold text-emerald-600">Below 40h</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                    type="button"
+                    @click="rebalancingModal = false"
+                    class="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                >
+                    Review Later
+                </button>
+
+                <button
+                    type="button"
+                    @click="applyRebalancing()"
+                    class="min-h-11 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"
+                >
+                    Confirm Rebalancing
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- =============================================================
+     LIBRARIES
+============================================================== -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+
+<script>
+    function hodDashboard() {
+        return {
+            sidebarOpen: true,
+            sidebarMobileOpen: false,
+            profileOpen: false,
+
+            lecturerModal: false,
+            allocationModal: false,
+            rebalancingModal: false,
+
+            selectedLecturer: {},
+
+            lecturers: [
+                {
+                    id: 'UTB-LEC-001',
+                    name: 'Dr. Emmanuel N.',
+                    initials: 'EN',
+                    department: 'Computing',
+                    speciality: 'Software Engineering',
+                    classes: 4,
+                    hours: 34.5,
+                    score: 38,
+                    risk: 'Low'
+                },
+                {
+                    id: 'UTB-LEC-004',
+                    name: 'Dr. Alice M.',
+                    initials: 'AM',
+                    department: 'Computing',
+                    speciality: 'Information Systems',
+                    classes: 5,
+                    hours: 36,
+                    score: 46,
+                    risk: 'Moderate'
+                },
+                {
+                    id: 'UTB-LEC-007',
+                    name: 'Prof. Daniel K.',
+                    initials: 'DK',
+                    department: 'Computing',
+                    speciality: 'Data Science',
+                    classes: 5,
+                    hours: 38.5,
+                    score: 58,
+                    risk: 'Moderate'
+                },
+                {
+                    id: 'UTB-LEC-009',
+                    name: 'Dr. Grace U.',
+                    initials: 'GU',
+                    department: 'Business',
+                    speciality: 'Business Administration',
+                    classes: 6,
+                    hours: 43,
+                    score: 67,
+                    risk: 'High'
+                },
+                {
+                    id: 'UTB-LEC-012',
+                    name: 'Dr. Jean P.',
+                    initials: 'JP',
+                    department: 'Computing',
+                    speciality: 'Software Engineering',
+                    classes: 7,
+                    hours: 51,
+                    score: 91,
+                    risk: 'Critical'
+                },
+                {
+                    id: 'UTB-LEC-014',
+                    name: 'Dr. Sarah A.',
+                    initials: 'SA',
+                    department: 'Tourism',
+                    speciality: 'Business Administration',
+                    classes: 4,
+                    hours: 41,
+                    score: 64,
+                    risk: 'High'
+                },
+                {
+                    id: 'UTB-LEC-017',
+                    name: 'Mr. Patrick R.',
+                    initials: 'PR',
+                    department: 'Tourism',
+                    speciality: 'Information Systems',
+                    classes: 3,
+                    hours: 32,
+                    score: 29,
+                    risk: 'Low'
+                },
+                {
+                    id: 'UTB-LEC-021',
+                    name: 'Dr. Beatrice T.',
+                    initials: 'BT',
+                    department: 'Computing',
+                    speciality: 'Data Science',
+                    classes: 6,
+                    hours: 49,
+                    score: 84,
+                    risk: 'Critical'
+                }
+            ],
+
+            get filteredLecturers() {
+                return this.lecturers;
+            },
+
+            init() {
+                this.$nextTick(() => {
+                    this.initializeCharts();
+                });
+            },
+
+            closeMobileSidebar() {
+                if (window.innerWidth < 768) {
+                    this.sidebarMobileOpen = false;
+                }
+            },
+
+            openLecturer(lecturer) {
+                this.selectedLecturer = lecturer;
+                this.lecturerModal = true;
+            },
+
+            switchRole(event) {
+                if (event.target.value === 'lecturer') {
+                    window.location.href = "{% url 'lecturer_dashboard' %}";
+                }
+            },
+
+            applyRebalancing() {
+                this.rebalancingModal = false;
+
+                alert(
+                    'AI rebalancing plan prepared successfully. Review the proposed assignments before final approval.'
+                );
+            },
+
+            initializeCharts() {
+
+                const donutElement = document.querySelector('#workloadDonutChart');
+
+                if (donutElement) {
+                    const donutChart = new ApexCharts(donutElement, {
+                        chart: {
+                            type: 'donut',
+                            height: 300,
+                            toolbar: {
+                                show: false
+                            }
+                        },
+
+                        series: [2, 2, 2, 2],
+
+                        labels: [
+                            'Low',
+                            'Moderate',
+                            'High',
+                            'Critical'
+                        ],
+
+                        colors: [
+                            '#10B981',
+                            '#3B82F6',
+                            '#F59E0B',
+                            '#EF4444'
+                        ],
+
+                        legend: {
+                            position: 'bottom',
+                            fontSize: '12px'
+                        },
+
+                        stroke: {
+                            width: 2,
+                            colors: ['#FFFFFF']
+                        },
+
+                        dataLabels: {
+                            enabled: true,
+                            formatter: function (value) {
+                                return Math.round(value) + '%';
+                            }
+                        },
+
+                        plotOptions: {
+                            pie: {
+                                donut: {
+                                    size: '68%',
+                                    labels: {
+                                        show: true,
+                                        total: {
+                                            show: true,
+                                            label: 'Lecturers',
+                                            fontSize: '13px',
+                                            fontWeight: 700,
+                                            color: '#64748B',
+                                            formatter: function () {
+                                                return '8';
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+
+                        tooltip: {
+                            y: {
+                                formatter: function (value) {
+                                    return value + ' lecturers';
+                                }
+                            }
+                        }
+                    });
+
+                    donutChart.render();
+                }
+
+
+                const barElement = document.querySelector('#weeklyHoursChart');
+
+                if (barElement) {
+                    const barChart = new ApexCharts(barElement, {
+                        chart: {
+                            type: 'bar',
+                            height: 330,
+                            toolbar: {
+                                show: false
+                            }
+                        },
+
+                        series: [
+                            {
+                                name: 'Weekly Hours',
+                                data: [34.5, 36, 38.5, 43, 51, 41, 32, 49]
+                            },
+                            {
+                                name: '40h Baseline',
+                                data: [40, 40, 40, 40, 40, 40, 40, 40]
+                            }
+                        ],
+
+                        xaxis: {
+                            categories: [
+                                'Emmanuel',
+                                'Alice',
+                                'Daniel',
+                                'Grace',
+                                'Jean',
+                                'Sarah',
+                                'Patrick',
+                                'Beatrice'
+                            ],
+
+                            labels: {
+                                style: {
+                                    fontSize: '11px',
+                                    colors: '#64748B'
+                                }
+                            }
+                        },
+
+                        yaxis: {
+                            min: 0,
+                            max: 60,
+                            tickAmount: 6,
+
+                            labels: {
+                                formatter: function (value) {
+                                    return value + 'h';
+                                }
+                            }
+                        },
+
+                        colors: [
+                            '#2563EB',
+                            '#CBD5E1'
+                        ],
+
+                        plotOptions: {
+                            bar: {
+                                horizontal: false,
+                                columnWidth: '55%',
+                                borderRadius: 5
+                            }
+                        },
+
+                        dataLabels: {
+                            enabled: false
+                        },
+
+                        legend: {
+                            position: 'top',
+                            horizontalAlign: 'right',
+                            fontSize: '12px'
+                        },
+
+                        grid: {
+                            borderColor: '#E2E8F0',
+                            strokeDashArray: 4
+                        },
+
+                        tooltip: {
+                            y: {
+                                formatter: function (value) {
+                                    return value + ' hours';
+                                }
+                            }
+                        }
+                    });
+
+                    barChart.render();
+                }
+            }
+        };
+    }
+
+
+    function rosterFilters() {
+        return {
+            search: '',
+            department: '',
+            speciality: '',
+            risk: '',
+
+            lecturers: [
+                {
+                    id: 'UTB-LEC-001',
+                    name: 'Dr. Emmanuel N.',
+                    initials: 'EN',
+                    department: 'Computing',
+                    speciality: 'Software Engineering',
+                    classes: 4,
+                    hours: 34.5,
+                    score: 38,
+                    risk: 'Low'
+                },
+                {
+                    id: 'UTB-LEC-004',
+                    name: 'Dr. Alice M.',
+                    initials: 'AM',
+                    department: 'Computing',
+                    speciality: 'Information Systems',
+                    classes: 5,
+                    hours: 36,
+                    score: 46,
+                    risk: 'Moderate'
+                },
+                {
+                    id: 'UTB-LEC-007',
+                    name: 'Prof. Daniel K.',
+                    initials: 'DK',
+                    department: 'Computing',
+                    speciality: 'Data Science',
+                    classes: 5,
+                    hours: 38.5,
+                    score: 58,
+                    risk: 'Moderate'
+                },
+                {
+                    id: 'UTB-LEC-009',
+                    name: 'Dr. Grace U.',
+                    initials: 'GU',
+                    department: 'Business',
+                    speciality: 'Business Administration',
+                    classes: 6,
+                    hours: 43,
+                    score: 67,
+                    risk: 'High'
+                },
+                {
+                    id: 'UTB-LEC-012',
+                    name: 'Dr. Jean P.',
+                    initials: 'JP',
+                    department: 'Computing',
+                    speciality: 'Software Engineering',
+                    classes: 7,
+                    hours: 51,
+                    score: 91,
+                    risk: 'Critical'
+                },
+                {
+                    id: 'UTB-LEC-014',
+                    name: 'Dr. Sarah A.',
+                    initials: 'SA',
+                    department: 'Tourism',
+                    speciality: 'Business Administration',
+                    classes: 4,
+                    hours: 41,
+                    score: 64,
+                    risk: 'High'
+                },
+                {
+                    id: 'UTB-LEC-017',
+                    name: 'Mr. Patrick R.',
+                    initials: 'PR',
+                    department: 'Tourism',
+                    speciality: 'Information Systems',
+                    classes: 3,
+                    hours: 32,
+                    score: 29,
+                    risk: 'Low'
+                },
+                {
+                    id: 'UTB-LEC-021',
+                    name: 'Dr. Beatrice T.',
+                    initials: 'BT',
+                    department: 'Computing',
+                    speciality: 'Data Science',
+                    classes: 6,
+                    hours: 49,
+                    score: 84,
+                    risk: 'Critical'
+                }
+            ],
+
+            get filteredLecturers() {
+                const query = this.search.trim().toLowerCase();
+
+                return this.lecturers.filter(lecturer => {
+
+                    const matchesSearch =
+                        !query ||
+                        lecturer.name.toLowerCase().includes(query) ||
+                        lecturer.id.toLowerCase().includes(query) ||
+                        lecturer.speciality.toLowerCase().includes(query);
+
+                    const matchesDepartment =
+                        !this.department ||
+                        lecturer.department === this.department;
+
+                    const matchesSpeciality =
+                        !this.speciality ||
+                        lecturer.speciality === this.speciality;
+
+                    const matchesRisk =
+                        !this.risk ||
+                        lecturer.risk === this.risk;
+
+                    return (
+                        matchesSearch &&
+                        matchesDepartment &&
+                        matchesSpeciality &&
+                        matchesRisk
+                    );
+                });
+            },
+
+            openLecturer(lecturer) {
+                const event = new CustomEvent('open-lecturer', {
+                    detail: lecturer
+                });
+
+                window.dispatchEvent(event);
+            }
+        };
+    }
+
+
+    document.addEventListener('alpine:init', () => {
+
+        window.addEventListener('open-lecturer', event => {
+
+            const dashboard = document.querySelector('[x-data^="hodDashboard"]');
+
+            if (!dashboard || !dashboard._x_dataStack) {
+                return;
+            }
+
+            const data = Alpine.$data(dashboard);
+
+            data.selectedLecturer = event.detail;
+            data.lecturerModal = true;
+        });
+
+    });
+</script>
+
+{% endblock %}
