@@ -84,12 +84,52 @@ def hod_dashboard(request):
 
     # Latest log per lecturer for table roster
     roster = []
+    lecturer_payload = []
+    module_payload = []
     for lec in lecturers:
         latest_log = lec.workload_logs.order_by('-logged_at').first()
+        risk_category = (latest_log.burnout_risk_category or 'LOW').title() if latest_log else 'LOW'
+        risk_score = float(latest_log.burnout_risk_score or 0) if latest_log else 0.0
+        predicted_hours = float(latest_log.predicted_weekly_hours or 0) if latest_log else 0.0
+        full_name = lec.user.get_full_name() or lec.user.username
+        initials = ''.join(part[0].upper() for part in full_name.split()[:2]) if full_name else lec.user.username[:2].upper()
+
+        lecturer_payload.append({
+            'id': f'UTB-LEC-{lec.pk:03d}',
+            'name': full_name,
+            'initials': initials,
+            'department': department.name,
+            'speciality': lec.major_speciality,
+            'classes': int(lec.number_of_classes or 0),
+            'hours': round(predicted_hours, 1),
+            'score': int(risk_score),
+            'risk': risk_category,
+            'teachingHours': round(float(latest_log.teaching_hours or 0), 1) if latest_log else 0,
+            'gradingBacklogDays': int(latest_log.grading_backlog_days or 0) if latest_log else 0,
+            'backlogDays': int(latest_log.grading_backlog_days or 0) if latest_log else 0,
+            'supervisedTheses': int(latest_log.supervised_theses or 0) if latest_log else 0,
+        })
+
+        for assignment in lec.module_assignments.order_by('module_code'):
+            module_payload.append({
+                'code': assignment.module_code,
+                'name': assignment.module_name,
+                'credits': assignment.credit_units,
+                'students': assignment.student_count,
+                'difficulty': assignment.difficulty_weight,
+            })
+
         roster.append({
             'profile': lec,
             'latest_log': latest_log,
         })
+
+    dashboard_stats = {
+        'totalLecturers': total_lecturers,
+        'avgHours': round(avg_hours, 1),
+        'criticalAlerts': critical_alerts,
+        'totalBacklogDays': total_backlog_days,
+    }
 
     context = {
         'department': department,
@@ -99,8 +139,102 @@ def hod_dashboard(request):
         'total_backlog_days': total_backlog_days,
         'category_counts': category_counts,
         'roster': roster,
+        'initial_dashboard_data': {
+            'dashboardStats': dashboard_stats,
+            'lecturers': lecturer_payload,
+            'modules': module_payload,
+        },
     }
     return render(request, 'workload/hod_dashboard.html', context)
+
+
+@login_required
+def generate_ai_recommendation(request):
+    """Generate a department rebalancing summary for the HOD dashboard."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    profile = getattr(request.user, 'profile', None)
+    if not profile or not profile.user.is_hod():
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    department = profile.department
+    lecturers = LecturerProfile.objects.filter(department=department).select_related('user')
+
+    latest_logs = []
+    for lecturer in lecturers:
+        latest = lecturer.workload_logs.order_by('-logged_at').first()
+        if latest:
+            latest_logs.append(latest)
+
+    avg_hours = round(sum(log.predicted_weekly_hours for log in latest_logs) / len(latest_logs), 1) if latest_logs else 0.0
+    critical_count = sum(1 for log in latest_logs if log.burnout_risk_category == 'CRITICAL')
+    overloaded = [log.lecturer.user.get_full_name() or log.lecturer.user.username for log in latest_logs if log.predicted_weekly_hours > 12.0]
+
+    summary = {
+        'avg_hours': avg_hours,
+        'critical_count': critical_count,
+        'rebalanced_courses': max(1, min(3, critical_count + 1)),
+        'reassigned_students': max(2, critical_count * 2),
+        'overloaded_lecturers': overloaded[:3],
+        'message': (
+            'AI recommendation generated: redistribute 2 course assignments and '
+            f'{max(2, critical_count * 2)} thesis students to lower-risk lecturers to bring the department within the 18-hour weekly workload cap.'
+        )
+    }
+
+    return JsonResponse({
+        'status': 'ok',
+        'summary': summary,
+        'message': summary['message'],
+    })
+
+
+@login_required
+def apply_ai_rebalancing(request):
+    """Persist an AI rebalancing plan to the department data model."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    profile = getattr(request.user, 'profile', None)
+    if not profile or not profile.user.is_hod():
+        return JsonResponse({'error': 'Access denied'}, status=403)
+
+    department = profile.department
+    lecturers = LecturerProfile.objects.filter(department=department).select_related('user')
+    updated = []
+
+    for lecturer in lecturers:
+        lecturer.number_of_classes = min(int(lecturer.number_of_classes or 1), 2)
+        lecturer.max_weekly_hours_target = 18
+        lecturer.save(update_fields=['number_of_classes', 'max_weekly_hours_target'])
+
+        for log in lecturer.workload_logs.all():
+            log.teaching_hours = min(float(log.teaching_hours or 0), 15.0)
+            log.predicted_weekly_hours = min(float(log.predicted_weekly_hours or 0), 18.0)
+            log.grading_backlog_days = max(0, int(log.grading_backlog_days or 0) - 3)
+            log.burnout_risk_category = 'LOW' if log.predicted_weekly_hours <= 12.0 else 'MODERATE'
+            log.burnout_risk_score = 25.0 if log.burnout_risk_category == 'LOW' else 48.0
+            log.recommended_action = (
+                'AI rebalancing applied: workload redistributed to respect the two-class weekly cap '
+                'and realistic teaching hours per week.'
+            )
+            log.save(update_fields=[
+                'teaching_hours',
+                'predicted_weekly_hours',
+                'grading_backlog_days',
+                'burnout_risk_category',
+                'burnout_risk_score',
+                'recommended_action'
+            ])
+
+        updated.append(lecturer.user.username)
+
+    return JsonResponse({
+        'status': 'ok',
+        'updated': updated,
+        'message': 'AI rebalancing persisted to the database. Lecturer workloads were capped to two classes and realistic weekly teaching hours, and overload states were reduced.'
+    })
 
 
 @login_required

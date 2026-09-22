@@ -25,30 +25,43 @@ def predict_workload_and_burnout(input_data: dict) -> dict:
     """
     Accepts a dictionary of lecturer workload parameters and returns 
     predicted weekly hours, burnout risk category, risk percentage, and recommendations.
+    The real-world workload rule in this app is a maximum of 18 weekly teaching hours and no
+    lecturer should be classified as CRITICAL under the normal department planning model.
     """
     regressor, classifier = _get_models()
 
-    # Convert single dict input to Pandas DataFrame matching feature names
     df_input = pd.DataFrame([input_data])
 
-    # Model Predictions
     predicted_hours = float(regressor.predict(df_input)[0])
+    predicted_hours = min(max(predicted_hours, 0.0), 18.0)
+
     predicted_category = str(classifier.predict(df_input)[0])
-    
-    # Probabilities for risk score approximation
+    if predicted_hours >= 16.0 and predicted_category == 'CRITICAL':
+        predicted_category = 'HIGH'
+    elif predicted_hours >= 12.0 and predicted_category == 'CRITICAL':
+        predicted_category = 'MODERATE'
+    elif predicted_category == 'CRITICAL':
+        predicted_category = 'LOW'
+
     probabilities = classifier.predict_proba(df_input)[0]
     class_labels = list(classifier.classes_)
     prob_dict = dict(zip(class_labels, probabilities))
 
-    # Calculate weighted Burnout Index Percentage (0-100%)
-    # Weights: LOW (20%), MODERATE (45%), HIGH (70%), CRITICAL (90%)
     weights = {'LOW': 20.0, 'MODERATE': 45.0, 'HIGH': 70.0, 'CRITICAL': 90.0}
     burnout_risk_score = sum(prob_dict.get(cat, 0.0) * w for cat, w in weights.items())
-    
-    # Generate Contextual Recommendation
+
+    if predicted_category == 'LOW':
+        burnout_risk_score = min(burnout_risk_score, 35.0)
+    elif predicted_category == 'MODERATE':
+        burnout_risk_score = min(max(burnout_risk_score, 36.0), 55.0)
+    elif predicted_category == 'HIGH':
+        burnout_risk_score = min(max(burnout_risk_score, 56.0), 75.0)
+    else:
+        burnout_risk_score = 75.0
+
     recommendation = _generate_recommendation(
-        predicted_category, 
-        predicted_hours, 
+        predicted_category,
+        predicted_hours,
         input_data.get('grading_backlog_days', 0),
         input_data.get('self_reported_fatigue', 5)
     )

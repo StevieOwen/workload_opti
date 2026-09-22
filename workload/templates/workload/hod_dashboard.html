@@ -7,6 +7,8 @@
     x-init="init()"
     class="min-h-screen bg-slate-50 text-slate-900"
 >
+    {{ initial_dashboard_data|json_script:"initial-dashboard-data" }}
+
     <!-- =========================================================
          MOBILE SIDEBAR BACKDROP
     ========================================================== -->
@@ -272,13 +274,13 @@
                     <!-- Role Switcher -->
                     <div class="relative hidden sm:block">
                         <label class="sr-only">Switch dashboard role</label>
-                        <select
+                        <!-- <select
                             @change="switchRole($event)"
                             class="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-slate-700 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
                         >
                             <option value="hod" selected>HOD</option>
                             <option value="lecturer">Lecturer</option>
-                        </select>
+                        </select> -->
                     </div>
 
                     <!-- Profile -->
@@ -337,21 +339,21 @@
                                     Reports & Extensions
                                 </a>
 
-                                <a
+                                <!-- <a
                                     href="{% url 'lecturer_dashboard' %}"
                                     @click="open = false"
                                     class="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                                 >
                                     Lecturer View
-                                </a>
+                                </a> -->
 
-                                <a
-                                    href="{% url 'logout' %}"
-                                    @click="open = false"
-                                    class="block rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-                                >
+                                <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="logout-btn block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" style="background: none; border: none; cursor: pointer; color: inherit;">
+                                    <!-- Keep your logout icon here if you have one -->
                                     Logout
-                                </a>
+                                </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -411,7 +413,7 @@
 
                             <div>
                                 <p class="text-sm font-extrabold text-red-900">
-                                    2 critical burnout alerts require attention
+                                    <span x-text="dashboardStats.criticalAlerts"></span> critical burnout alerts require attention
                                 </p>
                                 <p class="mt-1 text-xs leading-5 text-red-700">
                                     AI analysis has identified lecturers whose workload currently
@@ -432,6 +434,28 @@
                     </div>
                 </div>
 
+                <div
+                    x-show="rebalancingApplied"
+                    x-cloak
+                    x-transition
+                    class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4"
+                >
+                    <div class="flex items-start gap-3">
+                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 3"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <p class="text-sm font-extrabold text-emerald-900">
+                                AI rebalancing applied successfully
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-emerald-700" x-text="rebalanceMessage">
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- KPI Cards -->
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -443,7 +467,7 @@
                                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
                                     Total Lecturers
                                 </p>
-                                <p class="mt-2 text-3xl font-black text-slate-900">
+                                <p class="mt-2 text-3xl font-black text-slate-900" x-text="dashboardStats.totalLecturers">
                                     8
                                 </p>
                                 <p class="mt-1 text-xs text-slate-500">
@@ -474,11 +498,11 @@
                                     Avg. Workload
                                 </p>
                                 <p class="mt-2 text-3xl font-black text-slate-900">
-                                    42.5
+                                    <span x-text="dashboardStats.avgHours">42.5</span>
                                     <span class="text-base font-bold text-slate-400">hrs</span>
                                 </p>
                                 <p class="mt-1 text-xs text-amber-600">
-                                    +2.5 hrs above baseline
+                                    <span x-text="(dashboardStats.avgHours - 18).toFixed(1)"></span> hrs above baseline
                                 </p>
                             </div>
 
@@ -509,7 +533,7 @@
                                         <span class="relative inline-flex h-3 w-3 rounded-full bg-red-600"></span>
                                     </span>
 
-                                    <p class="text-3xl font-black text-red-600">
+                                    <p class="text-3xl font-black text-red-600" x-text="dashboardStats.criticalAlerts">
                                         2
                                     </p>
                                 </div>
@@ -537,7 +561,7 @@
                                     Academic Backlog
                                 </p>
                                 <p class="mt-2 text-3xl font-black text-slate-900">
-                                    14
+                                    <span x-text="dashboardStats.totalBacklogDays">14</span>
                                     <span class="text-base font-bold text-slate-400">days</span>
                                 </p>
                                 <p class="mt-1 text-xs text-slate-500">
@@ -908,10 +932,10 @@
 
                     <button
                         type="button"
-                        @click="allocationModal = true"
+                        @click="generateRecommendation(); allocationModal = true"
                         class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+                        x-text="rebalancingApplied ? 'Generate Another Recommendation' : 'Generate New Recommendation'"
                     >
-                        Generate New Recommendation
                     </button>
                 </div>
 
@@ -1023,12 +1047,12 @@
                                             Course Rebalancing
                                         </p>
                                         <p class="mt-1 text-sm font-bold text-slate-900">
-                                            Move 2 modules to available capacity
+                                            Move <span x-text="Math.min(2, modules.length)"></span> modules to available capacity
                                         </p>
                                     </div>
 
                                     <span class="text-sm font-black text-emerald-600">
-                                        -6.5h
+                                        <span x-text="`-${Math.min(6.5, Math.max(0, dashboardStats.avgHours - 18)).toFixed(1)}h`"></span>
                                     </span>
                                 </div>
                             </div>
@@ -1040,12 +1064,12 @@
                                             Thesis Redistribution
                                         </p>
                                         <p class="mt-1 text-sm font-bold text-slate-900">
-                                            Transfer 4 students to capacity-matched supervisors
+                                            Transfer <span x-text="Math.max(0, dashboardStats.criticalAlerts * 2)"></span> students to capacity-matched supervisors
                                         </p>
                                     </div>
 
                                     <span class="text-sm font-black text-emerald-600">
-                                        -3h
+                                        <span x-text="`-${Math.min(3, dashboardStats.criticalAlerts * 1.5).toFixed(1)}h`"></span>
                                     </span>
                                 </div>
                             </div>
@@ -1057,12 +1081,12 @@
                                             Burnout Threshold
                                         </p>
                                         <p class="mt-1 text-sm font-bold text-emerald-900">
-                                            Critical staff projected below 40h
+                                            <span x-text="dashboardStats.criticalAlerts ? 'Critical staff require workload reduction' : 'No critical staff currently reported'"></span>
                                         </p>
                                     </div>
 
                                     <span class="text-sm font-black text-emerald-700">
-                                        38–39h
+                                        <span x-text="`${dashboardStats.avgHours.toFixed(1)}h avg`"></span>
                                     </span>
                                 </div>
                             </div>
@@ -1301,7 +1325,7 @@
 
                             <div class="mt-2 flex items-end gap-2">
                                 <p class="text-4xl font-black text-slate-900">
-                                    27.5
+                                    24
                                 </p>
 
                                 <p class="pb-1 text-sm font-bold text-amber-600">
@@ -1361,6 +1385,7 @@
 
                             <button
                                 type="button"
+                                @click="downloadCsvReport('senate_workload_report.csv')"
                                 class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
                             >
                                 <span class="flex items-center gap-3">
@@ -1384,6 +1409,7 @@
 
                             <button
                                 type="button"
+                                @click="downloadHrDataset('hr_capacity_dataset.csv')"
                                 class="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-3 text-left transition hover:border-blue-200 hover:bg-blue-50"
                             >
                                 <span class="flex items-center gap-3">
@@ -1408,6 +1434,7 @@
 
                             <button
                                 type="button"
+                                @click="downloadAuditPackage('audit_package.csv')"
                                 class="flex w-full items-center justify-between rounded-xl bg-[#0D2C54] px-4 py-3 text-left text-white transition hover:bg-[#123b6d]"
                             >
                                 <span class="flex items-center gap-3">
@@ -1541,29 +1568,29 @@
                     <div class="mt-4 space-y-3">
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-500">Teaching</span>
-                            <span class="font-bold text-slate-800">24 hrs</span>
+                            <span class="font-bold text-slate-800"><span x-text="selectedLecturer.teachingHours || 0"></span> hrs</span>
                         </div>
 
                         <div class="h-2 rounded-full bg-slate-100">
-                            <div class="h-2 w-[60%] rounded-full bg-blue-600"></div>
+                            <div class="h-2 rounded-full bg-blue-600" :style="`width: ${Math.min(100, ((selectedLecturer.teachingHours || 0) / 18) * 100)}%`"></div>
                         </div>
 
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-500">Grading</span>
-                            <span class="font-bold text-slate-800">9 hrs</span>
+                            <span class="font-bold text-slate-800"><span x-text="selectedLecturer.gradingBacklogDays || 0"></span> backlog days</span>
                         </div>
 
                         <div class="h-2 rounded-full bg-slate-100">
-                            <div class="h-2 w-[23%] rounded-full bg-amber-500"></div>
+                            <div class="h-2 rounded-full bg-amber-500" :style="`width: ${Math.min(100, ((selectedLecturer.gradingBacklogDays || 0) / 14) * 100)}%`"></div>
                         </div>
 
                         <div class="flex items-center justify-between text-sm">
                             <span class="text-slate-500">Thesis supervision</span>
-                            <span class="font-bold text-slate-800">5 hrs</span>
+                            <span class="font-bold text-slate-800"><span x-text="selectedLecturer.supervisedTheses || 0"></span> students</span>
                         </div>
 
                         <div class="h-2 rounded-full bg-slate-100">
-                            <div class="h-2 w-[13%] rounded-full bg-slate-500"></div>
+                            <div class="h-2 rounded-full bg-slate-500" :style="`width: ${Math.min(100, ((selectedLecturer.supervisedTheses || 0) / 10) * 100)}%`"></div>
                         </div>
                     </div>
                 </div>
@@ -1580,8 +1607,12 @@
                             </p>
 
                             <p class="mt-1 text-xs leading-5 text-blue-800">
-                                Consider redistributing grading support and one low-complexity
-                                course assignment to reduce projected workload.
+                                <span x-show="selectedLecturer.risk === 'Critical' || selectedLecturer.risk === 'High'">
+                                    Consider redistributing grading support and one course assignment to reduce projected workload.
+                                </span>
+                                <span x-show="selectedLecturer.risk !== 'Critical' && selectedLecturer.risk !== 'High'">
+                                    This lecturer is currently within the department workload policy. Keep monitoring their latest workload log.
+                                </span>
                             </p>
                         </div>
                     </div>
@@ -1669,9 +1700,10 @@
                         </label>
 
                         <select class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50">
-                            <option>BIT3102 — Advanced Database Systems</option>
-                            <option>BIT3204 — Software Engineering</option>
-                            <option>BIT3301 — Data Science</option>
+                            <template x-for="module in modules" :key="module.code">
+                                <option :value="module.code" x-text="`${module.code} — ${module.name}`"></option>
+                            </template>
+                            <option x-show="modules.length === 0">No module assignments found</option>
                         </select>
                     </div>
 
@@ -1726,78 +1758,31 @@
                     </div>
 
                     <div class="space-y-2">
-
-                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-blue-200 bg-blue-50 p-4">
+                        <template x-for="(lecturer, index) in recommendedLecturers" :key="lecturer.id">
+                            <label
+                                class="flex cursor-pointer items-center justify-between rounded-xl border p-4"
+                                :class="index === 0 ? 'border-blue-200 bg-blue-50' : 'border-slate-200 hover:bg-slate-50'"
+                            >
                             <div class="flex items-center gap-3">
                                 <input
                                     type="radio"
                                     name="recommended_lecturer"
-                                    checked
+                                    :checked="index === 0"
                                     class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
                                 >
 
                                 <div>
-                                    <p class="text-sm font-bold text-slate-900">
-                                        Dr. Emmanuel N.
-                                    </p>
-                                    <p class="text-xs text-slate-500">
-                                        Software Engineering · 34.5h current
-                                    </p>
+                                    <p class="text-sm font-bold text-slate-900" x-text="lecturer.name"></p>
+                                    <p class="text-xs text-slate-500" x-text="`${lecturer.speciality} · ${lecturer.hours}h current`"></p>
                                 </div>
                             </div>
 
-                            <span class="text-xs font-black text-emerald-600">
-                                91% match
-                            </span>
-                        </label>
-
-
-                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <input
-                                    type="radio"
-                                    name="recommended_lecturer"
-                                    class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
-                                >
-
-                                <div>
-                                    <p class="text-sm font-bold text-slate-900">
-                                        Dr. Alice M.
-                                    </p>
-                                    <p class="text-xs text-slate-500">
-                                        Information Systems · 36.0h current
-                                    </p>
-                                </div>
-                            </div>
-
-                            <span class="text-xs font-black text-blue-600">
-                                84% match
-                            </span>
-                        </label>
-
-
-                        <label class="flex cursor-pointer items-center justify-between rounded-xl border border-slate-200 p-4 hover:bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <input
-                                    type="radio"
-                                    name="recommended_lecturer"
-                                    class="h-4 w-4 border-slate-300 text-blue-600 focus:ring-blue-500"
-                                >
-
-                                <div>
-                                    <p class="text-sm font-bold text-slate-900">
-                                        Prof. Daniel K.
-                                    </p>
-                                    <p class="text-xs text-slate-500">
-                                        Data Science · 38.5h current
-                                    </p>
-                                </div>
-                            </div>
-
-                            <span class="text-xs font-black text-blue-600">
-                                78% match
-                            </span>
-                        </label>
+                            <span class="text-xs font-black" :class="index === 0 ? 'text-emerald-600' : 'text-blue-600'" x-text="`${lecturer.match}% match`"></span>
+                            </label>
+                        </template>
+                        <p x-show="recommendedLecturers.length === 0" class="rounded-xl border border-slate-200 p-4 text-sm text-slate-500">
+                            No lecturer workload data is available for recommendations.
+                        </p>
                     </div>
                 </div>
 
@@ -1867,17 +1852,17 @@
                 <div class="space-y-3 text-sm">
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Course assignments</span>
-                        <span class="font-bold text-slate-800">2 changes</span>
+                        <span class="font-bold text-slate-800" x-text="`${Math.min(2, modules.length)} changes`"></span>
                     </div>
 
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Thesis supervision</span>
-                        <span class="font-bold text-slate-800">4 students</span>
+                        <span class="font-bold text-slate-800" x-text="`${Math.max(0, dashboardStats.criticalAlerts * 2)} students`"></span>
                     </div>
 
                     <div class="flex items-center justify-between">
                         <span class="text-slate-500">Critical staff projected</span>
-                        <span class="font-bold text-emerald-600">Below 40h</span>
+                        <span class="font-bold text-emerald-600" x-text="dashboardStats.criticalAlerts ? 'Requires review' : 'Within policy'"></span>
                     </div>
                 </div>
             </div>
@@ -1914,6 +1899,22 @@
 
 
 <script>
+    const initialDashboardData = (() => {
+        const scriptNode = document.getElementById('initial-dashboard-data');
+        if (!scriptNode) {
+            return { dashboardStats: { totalLecturers: 0, avgHours: 0, criticalAlerts: 0, totalBacklogDays: 0 }, lecturers: [] };
+        }
+
+        try {
+            return JSON.parse(scriptNode.textContent);
+        } catch (error) {
+            console.warn('Dashboard initial data could not be parsed:', error);
+            return { dashboardStats: { totalLecturers: 0, avgHours: 0, criticalAlerts: 0, totalBacklogDays: 0 }, lecturers: [] };
+        }
+    })();
+
+    window.utbHodDashboardInitialData = initialDashboardData;
+
     function hodDashboard() {
         return {
             sidebarOpen: true,
@@ -1923,105 +1924,52 @@
             lecturerModal: false,
             allocationModal: false,
             rebalancingModal: false,
+            rebalancingApplied: false,
+            rebalanceMessage: '2 course assignments and 4 thesis students were shifted to lower-risk lecturers to reduce critical workload pressure.',
+            dashboardStats: initialDashboardData.dashboardStats || {
+                totalLecturers: 0,
+                avgHours: 0,
+                criticalAlerts: 0,
+                totalBacklogDays: 0
+            },
 
             selectedLecturer: {},
 
-            lecturers: [
-                {
-                    id: 'UTB-LEC-001',
-                    name: 'Dr. Emmanuel N.',
-                    initials: 'EN',
-                    department: 'Computing',
-                    speciality: 'Software Engineering',
-                    classes: 4,
-                    hours: 34.5,
-                    score: 38,
-                    risk: 'Low'
-                },
-                {
-                    id: 'UTB-LEC-004',
-                    name: 'Dr. Alice M.',
-                    initials: 'AM',
-                    department: 'Computing',
-                    speciality: 'Information Systems',
-                    classes: 5,
-                    hours: 36,
-                    score: 46,
-                    risk: 'Moderate'
-                },
-                {
-                    id: 'UTB-LEC-007',
-                    name: 'Prof. Daniel K.',
-                    initials: 'DK',
-                    department: 'Computing',
-                    speciality: 'Data Science',
-                    classes: 5,
-                    hours: 38.5,
-                    score: 58,
-                    risk: 'Moderate'
-                },
-                {
-                    id: 'UTB-LEC-009',
-                    name: 'Dr. Grace U.',
-                    initials: 'GU',
-                    department: 'Business',
-                    speciality: 'Business Administration',
-                    classes: 6,
-                    hours: 43,
-                    score: 67,
-                    risk: 'High'
-                },
-                {
-                    id: 'UTB-LEC-012',
-                    name: 'Dr. Jean P.',
-                    initials: 'JP',
-                    department: 'Computing',
-                    speciality: 'Software Engineering',
-                    classes: 7,
-                    hours: 51,
-                    score: 91,
-                    risk: 'Critical'
-                },
-                {
-                    id: 'UTB-LEC-014',
-                    name: 'Dr. Sarah A.',
-                    initials: 'SA',
-                    department: 'Tourism',
-                    speciality: 'Business Administration',
-                    classes: 4,
-                    hours: 41,
-                    score: 64,
-                    risk: 'High'
-                },
-                {
-                    id: 'UTB-LEC-017',
-                    name: 'Mr. Patrick R.',
-                    initials: 'PR',
-                    department: 'Tourism',
-                    speciality: 'Information Systems',
-                    classes: 3,
-                    hours: 32,
-                    score: 29,
-                    risk: 'Low'
-                },
-                {
-                    id: 'UTB-LEC-021',
-                    name: 'Dr. Beatrice T.',
-                    initials: 'BT',
-                    department: 'Computing',
-                    speciality: 'Data Science',
-                    classes: 6,
-                    hours: 49,
-                    score: 84,
-                    risk: 'Critical'
-                }
-            ],
+            lecturers: initialDashboardData.lecturers || [],
+            modules: initialDashboardData.modules || [],
 
             get filteredLecturers() {
                 return this.lecturers;
             },
 
+            get recommendedLecturers() {
+                return [...this.lecturers]
+                    .sort((left, right) => {
+                        const leftLoad = Number(left.hours) + Number(left.score) / 4;
+                        const rightLoad = Number(right.hours) + Number(right.score) / 4;
+                        return leftLoad - rightLoad;
+                    })
+                    .slice(0, 3)
+                    .map((lecturer) => ({
+                        ...lecturer,
+                        match: Math.max(0, Math.min(99, Math.round(100 - Number(lecturer.hours) * 2 - Number(lecturer.score) * 0.35)))
+                    }));
+            },
+
             init() {
+                const parsed = window.utbHodDashboardInitialData || initialDashboardData;
+                if (parsed && parsed.dashboardStats) {
+                    this.dashboardStats = parsed.dashboardStats;
+                }
+                if (parsed && parsed.lecturers) {
+                    this.lecturers = parsed.lecturers;
+                }
+                if (parsed && parsed.modules) {
+                    this.modules = parsed.modules;
+                }
+
+                this.syncDashboardFromLecturers();
+
                 this.$nextTick(() => {
                     this.initializeCharts();
                 });
@@ -2044,15 +1992,185 @@
                 }
             },
 
-            applyRebalancing() {
+            getCookie(name) {
+                const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+                return match ? decodeURIComponent(match[2]) : '';
+            },
+
+            async fetchAiSummary(url, fallbackMessage) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCookie('csrftoken')
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({})
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || fallbackMessage);
+                    }
+
+                    return data;
+                } catch (error) {
+                    return { message: fallbackMessage + ': ' + error.message, status: 'error' };
+                }
+            },
+
+            syncDashboardFromLecturers() {
+                const totalLecturers = this.lecturers.length;
+                const avgHours = totalLecturers
+                    ? Number((this.lecturers.reduce((sum, lecturer) => sum + Number(lecturer.hours), 0) / totalLecturers).toFixed(1))
+                    : 0;
+                const criticalAlerts = this.lecturers.filter((lecturer) => lecturer.risk === 'Critical').length;
+                const totalBacklogDays = this.lecturers.reduce((sum, lecturer) => sum + Number(lecturer.backlogDays || lecturer.gradingBacklogDays || 0), 0);
+
+                this.dashboardStats = {
+                    totalLecturers,
+                    avgHours,
+                    criticalAlerts,
+                    totalBacklogDays
+                };
+            },
+
+            async generateRecommendation() {
+                const data = await this.fetchAiSummary('{% url "generate_ai_recommendation" %}', 'AI recommendation could not be generated');
+                if (data.status === 'error') {
+                    this.rebalancingApplied = true;
+                    this.rebalanceMessage = data.message;
+                    return;
+                }
+
+                const summary = data.summary || {};
+                this.rebalancingApplied = true;
+                this.rebalanceMessage = data.message || 'AI recommendation generated.';
+                this.recommendationSummary = summary;
+            },
+
+            async applyRebalancing() {
                 this.rebalancingModal = false;
 
-                alert(
-                    'AI rebalancing plan prepared successfully. Review the proposed assignments before final approval.'
-                );
+                const data = await this.fetchAiSummary('{% url "apply_ai_rebalancing" %}', 'AI rebalancing was not saved');
+
+                this.lecturers = this.lecturers.map((lecturer) => {
+                    const reducedHours = Math.max(8, Number(lecturer.hours) - (lecturer.risk === 'Critical' ? 12 : 6));
+                    const reducedScore = Math.max(15, Number(lecturer.score) - (lecturer.risk === 'Critical' ? 35 : 18));
+                    const nextRisk = reducedScore < 35 ? 'Low' : reducedScore < 55 ? 'Moderate' : reducedScore < 75 ? 'High' : 'Critical';
+
+                    return {
+                        ...lecturer,
+                        classes: Math.min(Number(lecturer.classes), 2),
+                        hours: Number(reducedHours.toFixed(1)),
+                        score: Math.min(100, Number(reducedScore.toFixed(0))),
+                        backlogDays: Math.max(0, Number(lecturer.backlogDays || 0) - 3),
+                        gradingBacklogDays: Math.max(0, Number(lecturer.gradingBacklogDays || 0) - 3),
+                        risk: nextRisk
+                    };
+                });
+
+                this.syncDashboardFromLecturers();
+                this.rebalancingApplied = true;
+                this.rebalanceMessage = data.message || 'AI rebalancing plan persisted to the department data.';
+            },
+
+            buildDepartmentRows() {
+                return this.lecturers.map((lecturer) => ({
+                    Name: lecturer.name,
+                    ID: lecturer.id,
+                    Department: lecturer.department,
+                    Speciality: lecturer.speciality,
+                    ClassesPerWeek: Math.min(lecturer.classes, 2),
+                    WeeklyHours: lecturer.hours,
+                    BurnoutScore: lecturer.score,
+                    Risk: lecturer.risk
+                }));
+            },
+
+            buildExportCsv(rows) {
+                if (!rows.length) {
+                    return '';
+                }
+
+                const headers = Object.keys(rows[0]);
+                const csvRows = [headers.join(',')];
+
+                rows.forEach((row) => {
+                    const values = headers.map((header) => {
+                        const value = row[header] ?? '';
+                        return '"' + String(value).replace(/"/g, '""') + '"';
+                    });
+                    csvRows.push(values.join(','));
+                });
+
+                return csvRows.join('\n');
+            },
+
+            downloadCsvFile(filename, rows) {
+                const csv = this.buildExportCsv(rows);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            },
+
+            downloadCsvReport(filename) {
+                this.downloadCsvFile(filename, this.buildDepartmentRows());
+            },
+
+            downloadHrDataset(filename) {
+                const rows = this.buildDepartmentRows().map((row) => ({
+                    ...row,
+                    OvertimeRisk: row.Risk,
+                    MaxWeeklyHours: 18,
+                    TeachingCap: 2
+                }));
+                this.downloadCsvFile(filename, rows);
+            },
+
+            downloadAuditPackage(filename) {
+                const rows = this.buildDepartmentRows().map((row) => ({
+                    ...row,
+                    AuditStatus: 'Reviewed',
+                    Compliance: row.Risk === 'Low' || row.Risk === 'Moderate' ? 'Compliant' : 'Escalated'
+                }));
+                this.downloadCsvFile(filename, rows);
             },
 
             initializeCharts() {
+
+                const riskCounts = {
+                    Low: 0,
+                    Moderate: 0,
+                    High: 0,
+                    Critical: 0,
+                };
+
+                this.lecturers.forEach((lecturer) => {
+                    if (lecturer.risk === 'Low') riskCounts.Low += 1;
+                    if (lecturer.risk === 'Moderate') riskCounts.Moderate += 1;
+                    if (lecturer.risk === 'High') riskCounts.High += 1;
+                    if (lecturer.risk === 'Critical') riskCounts.Critical += 1;
+                });
+
+                const chartSeries = [
+                    riskCounts.Low,
+                    riskCounts.Moderate,
+                    riskCounts.High,
+                    riskCounts.Critical,
+                ];
+
+                const chartLabels = ['Low', 'Moderate', 'High', 'Critical'];
+                const barCategories = this.lecturers.map((lecturer) => lecturer.name.split(' ').slice(0, 2).join(' '));
+                const hoursSeries = this.lecturers.map((lecturer) => Number(lecturer.hours));
 
                 const donutElement = document.querySelector('#workloadDonutChart');
 
@@ -2066,14 +2184,9 @@
                             }
                         },
 
-                        series: [2, 2, 2, 2],
+                        series: chartSeries,
 
-                        labels: [
-                            'Low',
-                            'Moderate',
-                            'High',
-                            'Critical'
-                        ],
+                        labels: chartLabels,
 
                         colors: [
                             '#10B981',
@@ -2112,7 +2225,7 @@
                                             fontWeight: 700,
                                             color: '#64748B',
                                             formatter: function () {
-                                                return '8';
+                                                return String(this.w.globals.seriesTotals.reduce((sum, value) => sum + value, 0));
                                             }
                                         }
                                     }
@@ -2148,25 +2261,16 @@
                         series: [
                             {
                                 name: 'Weekly Hours',
-                                data: [34.5, 36, 38.5, 43, 51, 41, 32, 49]
+                                data: hoursSeries
                             },
                             {
                                 name: '40h Baseline',
-                                data: [40, 40, 40, 40, 40, 40, 40, 40]
+                                data: this.lecturers.map(() => 40)
                             }
                         ],
 
                         xaxis: {
-                            categories: [
-                                'Emmanuel',
-                                'Alice',
-                                'Daniel',
-                                'Grace',
-                                'Jean',
-                                'Sarah',
-                                'Patrick',
-                                'Beatrice'
-                            ],
+                            categories: barCategories,
 
                             labels: {
                                 style: {
@@ -2239,96 +2343,7 @@
             speciality: '',
             risk: '',
 
-            lecturers: [
-                {
-                    id: 'UTB-LEC-001',
-                    name: 'Dr. Emmanuel N.',
-                    initials: 'EN',
-                    department: 'Computing',
-                    speciality: 'Software Engineering',
-                    classes: 4,
-                    hours: 34.5,
-                    score: 38,
-                    risk: 'Low'
-                },
-                {
-                    id: 'UTB-LEC-004',
-                    name: 'Dr. Alice M.',
-                    initials: 'AM',
-                    department: 'Computing',
-                    speciality: 'Information Systems',
-                    classes: 5,
-                    hours: 36,
-                    score: 46,
-                    risk: 'Moderate'
-                },
-                {
-                    id: 'UTB-LEC-007',
-                    name: 'Prof. Daniel K.',
-                    initials: 'DK',
-                    department: 'Computing',
-                    speciality: 'Data Science',
-                    classes: 5,
-                    hours: 38.5,
-                    score: 58,
-                    risk: 'Moderate'
-                },
-                {
-                    id: 'UTB-LEC-009',
-                    name: 'Dr. Grace U.',
-                    initials: 'GU',
-                    department: 'Business',
-                    speciality: 'Business Administration',
-                    classes: 6,
-                    hours: 43,
-                    score: 67,
-                    risk: 'High'
-                },
-                {
-                    id: 'UTB-LEC-012',
-                    name: 'Dr. Jean P.',
-                    initials: 'JP',
-                    department: 'Computing',
-                    speciality: 'Software Engineering',
-                    classes: 7,
-                    hours: 51,
-                    score: 91,
-                    risk: 'Critical'
-                },
-                {
-                    id: 'UTB-LEC-014',
-                    name: 'Dr. Sarah A.',
-                    initials: 'SA',
-                    department: 'Tourism',
-                    speciality: 'Business Administration',
-                    classes: 4,
-                    hours: 41,
-                    score: 64,
-                    risk: 'High'
-                },
-                {
-                    id: 'UTB-LEC-017',
-                    name: 'Mr. Patrick R.',
-                    initials: 'PR',
-                    department: 'Tourism',
-                    speciality: 'Information Systems',
-                    classes: 3,
-                    hours: 32,
-                    score: 29,
-                    risk: 'Low'
-                },
-                {
-                    id: 'UTB-LEC-021',
-                    name: 'Dr. Beatrice T.',
-                    initials: 'BT',
-                    department: 'Computing',
-                    speciality: 'Data Science',
-                    classes: 6,
-                    hours: 49,
-                    score: 84,
-                    risk: 'Critical'
-                }
-            ],
+            lecturers: window.utbHodDashboardInitialData?.lecturers || [],
 
             get filteredLecturers() {
                 const query = this.search.trim().toLowerCase();

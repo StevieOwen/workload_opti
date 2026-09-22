@@ -73,8 +73,8 @@ class Command(BaseCommand):
             related_specialities="Python, Database Design, System Architecture",
             employment_type=LecturerProfile.EmploymentType.FULL_TIME,
             years_experience=10,
-            number_of_classes=3,
-            max_weekly_hours_target=40
+            number_of_classes=2,
+            max_weekly_hours_target=18
         )
 
         # Link HOD user to the BIT department
@@ -101,8 +101,8 @@ class Command(BaseCommand):
             related_specialities="Python, Web Development, Databases",
             employment_type=LecturerProfile.EmploymentType.FULL_TIME,
             years_experience=8,
-            number_of_classes=3,
-            max_weekly_hours_target=40
+            number_of_classes=2,
+            max_weekly_hours_target=18
         )
         created_lecturers.append(demo_lecturer_profile)
         self.stdout.write(self.style.SUCCESS("Created Demo Lecturer: jean.mugisha1 (password: password123)"))
@@ -136,8 +136,8 @@ class Command(BaseCommand):
                     LecturerProfile.EmploymentType.PART_TIME
                 ]),
                 years_experience=random.randint(1, 15),
-                number_of_classes=random.randint(1, 4),
-                max_weekly_hours_target=40
+                number_of_classes=random.randint(1, 2),
+                max_weekly_hours_target=random.randint(14, 18)
             )
             created_lecturers.append(profile)
 
@@ -173,19 +173,19 @@ class Command(BaseCommand):
                 is_stressed = hash(profile.id) % 7 == 0
 
                 if is_stressed:
-                    teaching_hours = float(random.randint(18, 28))
-                    grading_backlog = random.randint(7, 20)
-                    theses = random.randint(6, 12)
-                    weekend_hrs = float(random.randint(6, 14))
-                    lms_actions = random.randint(15, 35)
+                    teaching_hours = float(random.uniform(10.0, 14.0))
+                    grading_backlog = random.randint(5, 12)
+                    theses = random.randint(4, 8)
+                    weekend_hrs = float(random.randint(2, 8))
+                    lms_actions = random.randint(8, 18)
                     fatigue = random.randint(7, 10)
                     support = random.randint(1, 3)
                 else:
-                    teaching_hours = float(random.randint(8, 16))
-                    grading_backlog = random.randint(0, 6)
-                    theses = random.randint(0, 5)
-                    weekend_hrs = float(random.randint(0, 5))
-                    lms_actions = random.randint(0, 10)
+                    teaching_hours = float(random.uniform(6.0, 10.0))
+                    grading_backlog = random.randint(0, 4)
+                    theses = random.randint(0, 3)
+                    weekend_hrs = float(random.randint(0, 3))
+                    lms_actions = random.randint(0, 8)
                     fatigue = random.randint(2, 6)
                     support = random.randint(3, 5)
 
