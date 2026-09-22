@@ -34,13 +34,15 @@
 
                 <div class="h-6 w-px bg-slate-200"></div>
 
-                <select
+                <!-- <select
                     class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
                     @change="switchRole($event)"
                 >
                     <option value="lecturer">Lecturer View</option>
+                    {% if profile.user.is_hod %}
                     <option value="hod">Head of Department</option>
-                </select>
+                    {% endif %}
+                </select> -->
 
                 <div class="relative" x-data="{ open: false }">
                     <button
@@ -55,7 +57,7 @@
 
                         <div class="hidden text-left lg:block">
                             <p class="text-sm font-bold text-slate-800">{{ user_full_name|default:request.user.username }}</p>
-                            <p class="text-xs text-slate-500">{{ user_role|default:'Academic Lecturer' }}</p>
+                            <p class="text-xs text-slate-500">{{ profile_speciality|default:'Academic Lecturer' }}</p>
                         </div>
 
                         <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,7 +75,7 @@
                     >
                         <div class="border-b border-slate-100 px-4 py-3">
                             <p class="text-sm font-bold text-slate-800">{{ user_full_name|default:request.user.username }}</p>
-                            <p class="text-xs text-slate-500">{{ profile_speciality|default:'Academic Lecturer' }}</p>
+                            <p class="text-xs text-slate-500">{{ profile_department|default:'Kigali Campus' }}</p>
                         </div>
 
                         <a href="#" @click.prevent="open = false" class="block px-4 py-3 text-sm text-slate-600 hover:bg-slate-50">
@@ -84,9 +86,12 @@
                             Preferences
                         </a>
 
-                        <a href="#" @click.prevent="open = false" class="block px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">
-                            Sign Out
-                        </a>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full text-left px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-50">
+                                Sign Out
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -108,7 +113,9 @@
                 @change="switchRole($event)"
             >
                 <option value="lecturer">Lecturer View</option>
+                {% if profile.user.is_hod %}
                 <option value="hod">Head of Department</option>
+                {% endif %}
             </select>
         </div>
     </header>
@@ -129,16 +136,16 @@
                 </div>
 
                 <h1 class="text-2xl font-black tracking-tight text-[#0D2C54] sm:text-3xl">
-                    Good afternoon, {{ user_first_name|default:request.user.first_name|default:request.user.username }}
+                    Good day, {{ user_first_name|default:request.user.first_name|default:request.user.username }}
                 </h1>
 
                 <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                    Department: <span class="font-bold text-slate-700">{{ profile_department }}</span>.
                     Monitor your teaching commitments, personal capacity, and workload trends.
-                    Your dashboard is designed to support planning — not surveillance.
                 </p>
             </div>
 
-            <button
+            <!-- <button
                 type="button"
                 @click="showSelfCheck = !showSelfCheck"
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0D2C54] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1E3A8A]"
@@ -146,8 +153,8 @@
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v14m7-7H5"/>
                 </svg>
-                Weekly Self-Check
-            </button>
+                <span x-text="showSelfCheck ? 'Hide Self-Check' : 'Weekly Self-Check'"></span>
+            </button> -->
         </div>
 
 
@@ -162,9 +169,9 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Assigned Classes
                         </p>
-                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ assigned_classes }}</p>
+                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ assigned_classes|default:0 }}</p>
                         <p class="mt-1 text-xs font-medium text-slate-500">
-                            {{ total_students }} total students
+                            {{ total_students|default:0 }} total students
                         </p>
                     </div>
 
@@ -182,7 +189,7 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Trimester Modules
                         </p>
-                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ modules_count }}</p>
+                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ modules_count|default:0 }}</p>
                         <p class="mt-1 text-xs font-medium text-emerald-600">
                             {% if modules_count %}All active{% else %}No active modules{% endif %}
                         </p>
@@ -202,9 +209,9 @@
                         <p class="text-xs font-bold uppercase tracking-wider text-slate-500">
                             Thesis Students
                         </p>
-                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ thesis_students }}</p>
+                        <p class="mt-2 text-3xl font-black text-[#0D2C54]">{{ thesis_students|default:0 }}</p>
                         <p class="mt-1 text-xs font-medium text-slate-500">
-                            {{ thesis_students }} currently under supervision
+                            Currently under supervision
                         </p>
                     </div>
 
@@ -224,10 +231,10 @@
                             Predicted Burnout Risk
                         </p>
                         <p class="mt-2 text-3xl font-black text-amber-600">
-                            {{ burnout_score }}%
+                            {{ burnout_score|default:0 }}%
                         </p>
                         <p class="mt-1 text-xs font-bold text-amber-600">
-                            {{ burnout_label }} risk
+                            {{ burnout_label|default:'Low' }} risk
                         </p>
                     </div>
 
@@ -245,12 +252,12 @@
                                 stroke="#EAB308"
                                 stroke-width="3"
                                 stroke-linecap="round"
-                                stroke-dasharray="68, 100"
+                                stroke-dasharray="{{ burnout_score|default:0 }}, 100"
                             />
                         </svg>
 
                         <span class="absolute inset-0 flex items-center justify-center text-[11px] font-black text-slate-700">
-                            68
+                            {{ burnout_score|default:0 }}
                         </span>
                     </div>
                 </div>
@@ -270,13 +277,19 @@
                             AI Personal Workload & Stress Capacity
                         </h2>
                         <p class="mt-1 text-xs text-slate-500">
-                            Current workload estimate compared with your 40-hour weekly baseline.
+                            Current workload estimate compared with your {{ target_hours|floatformat:0 }}-hour weekly baseline.
                         </p>
                     </div>
 
+                    {% if over_target_hours > 0 %}
                     <span class="rounded-full bg-orange-50 px-3 py-1.5 text-xs font-black text-orange-700">
-                        {{ over_target_hours }} hrs above target
+                        {{ over_target_hours|floatformat:1 }} hrs above target
                     </span>
+                    {% else %}
+                    <span class="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">
+                        Within target capacity
+                    </span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -301,10 +314,10 @@
                                 cy="60"
                                 r="50"
                                 fill="none"
-                                stroke="#D97706"
+                                stroke="{% if over_target_hours > 0 %}#D97706{% else %}#10B981{% endif %}"
                                 stroke-width="10"
                                 stroke-linecap="round"
-                                stroke-dasharray="183 314"
+                                stroke-dasharray="{% if target_hours %}{% widthratio workload_hours target_hours 235 %}{% else %}0{% endif %} 314"
                             />
                         </svg>
 
@@ -315,12 +328,21 @@
                     </div>
 
                     <div class="mt-2 text-center">
+                        {% if over_target_hours > 0 %}
                         <p class="text-sm font-black text-orange-700">
                             Workload above target
                         </p>
                         <p class="mt-1 text-xs leading-5 text-slate-500">
                             Consider reducing grading or administrative tasks where possible.
                         </p>
+                        {% else %}
+                        <p class="text-sm font-black text-emerald-700">
+                            Workload balanced
+                        </p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Your current hours are within normal weekly capacity bounds.
+                        </p>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -350,7 +372,7 @@
                                 <span class="font-bold text-slate-500">{{ teaching_hours|floatformat:1 }} hrs</span>
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-[#1E3A8A]" style="width: {% widthratio teaching_hours workload_hours 100 %}%;"></div>
+                                <div class="h-full rounded-full bg-[#1E3A8A]" style="width: {% if workload_hours %}{% widthratio teaching_hours workload_hours 100 %}{% else %}0{% endif %}%;"></div>
                             </div>
                         </div>
 
@@ -361,7 +383,7 @@
                                 <span class="font-bold text-slate-500">{{ grading_hours|floatformat:1 }} hrs</span>
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-blue-500" style="width: {% widthratio grading_hours workload_hours 100 %}%;"></div>
+                                <div class="h-full rounded-full bg-blue-500" style="width: {% if workload_hours %}{% widthratio grading_hours workload_hours 100 %}{% else %}0{% endif %}%;"></div>
                             </div>
                         </div>
 
@@ -372,7 +394,7 @@
                                 <span class="font-bold text-slate-500">{{ admin_hours|floatformat:1 }} hrs</span>
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-slate-500" style="width: {% widthratio admin_hours workload_hours 100 %}%;"></div>
+                                <div class="h-full rounded-full bg-slate-500" style="width: {% if workload_hours %}{% widthratio admin_hours workload_hours 100 %}{% else %}0{% endif %}%;"></div>
                             </div>
                         </div>
 
@@ -383,7 +405,7 @@
                                 <span class="font-bold text-slate-500">{{ thesis_hours|floatformat:1 }} hrs</span>
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-purple-500" style="width: {% widthratio thesis_hours workload_hours 100 %}%;"></div>
+                                <div class="h-full rounded-full bg-purple-500" style="width: {% if workload_hours %}{% widthratio thesis_hours workload_hours 100 %}{% else %}0{% endif %}%;"></div>
                             </div>
                         </div>
 
@@ -391,10 +413,10 @@
                         <div>
                             <div class="mb-2 flex justify-between text-xs">
                                 <span class="font-bold text-slate-700">Research</span>
-                                <span class="font-bold text-slate-500">6.0 hrs</span>
+                                <span class="font-bold text-slate-500">{{ research_hours|floatformat:1 }} hrs</span>
                             </div>
                             <div class="h-3 overflow-hidden rounded-full bg-slate-100">
-                                <div class="h-full rounded-full bg-emerald-500" style="width: 13%;"></div>
+                                <div class="h-full rounded-full bg-emerald-500" style="width: {% if workload_hours %}{% widthratio research_hours workload_hours 100 %}{% else %}0{% endif %}%;"></div>
                             </div>
                         </div>
                     </div>
@@ -410,46 +432,55 @@
 
             <!-- Self Check -->
             <div class="rounded-xl border border-slate-200 bg-white shadow-sm xl:col-span-1">
-                <div class="border-b border-slate-200 px-5 py-5">
-                    <h2 class="text-lg font-black text-[#0D2C54]">
-                        Weekly Fatigue Self-Check
-                    </h2>
-                    <p class="mt-1 text-xs leading-5 text-slate-500">
-                        Your responses help the AI model understand workload context.
-                    </p>
-                </div>
+                <!-- Self Check Card -->
+<div 
+    x-cloak 
+    x-show="showSelfCheck" 
+    x-transition 
+    class="rounded-xl border border-slate-200 bg-white shadow-sm xl:col-span-1"
+>
+    <div class="border-b border-slate-200 px-5 py-5">
+        <h2 class="text-lg font-black text-[#0D2C54]">
+            Weekly Fatigue Self-Check
+        </h2>
+        <p class="mt-1 text-xs leading-5 text-slate-500">
+            Your responses help the AI model understand workload context.
+        </p>
+    </div>
 
                 <form
-                    @submit.prevent="submitPrediction"
+                    method="POST"
+                    action="{% url 'lecturer_dashboard' %}"
                     class="space-y-4 p-5"
                 >
+                    {% csrf_token %}
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="mb-1.5 block text-xs font-bold text-slate-700">
                                 Teaching Hours
                             </label>
                             <input
-                                x-model="form.teaching_hours"
                                 type="number"
                                 step="0.5"
                                 min="0"
                                 name="teaching_hours"
+                                value="{{ latest_log.teaching_hours|default:18 }}"
                                 class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
-                                placeholder="18"
+                                required
                             >
                         </div>
 
                         <div>
                             <label class="mb-1.5 block text-xs font-bold text-slate-700">
-                                Assignments to Grade
+                                Grading Backlog (Days)
                             </label>
                             <input
-                                x-model="form.assignments_to_grade"
                                 type="number"
                                 min="0"
-                                name="assignments_to_grade"
+                                name="grading_backlog_days"
+                                value="{{ latest_log.grading_backlog_days|default:5 }}"
                                 class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
-                                placeholder="42"
+                                required
                             >
                         </div>
                     </div>
@@ -460,42 +491,42 @@
                                 Thesis Students
                             </label>
                             <input
-                                x-model="form.thesis_students_count"
                                 type="number"
                                 min="0"
-                                name="thesis_students_count"
+                                name="supervised_theses"
+                                value="{{ latest_log.supervised_theses|default:thesis_students|default:0 }}"
                                 class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
-                                placeholder="7"
+                                required
                             >
                         </div>
 
                         <div>
                             <label class="mb-1.5 block text-xs font-bold text-slate-700">
-                                Weekend Work
+                                Weekend Work (Hrs)
                             </label>
                             <input
-                                x-model="form.weekend_work_hours"
                                 type="number"
                                 step="0.5"
                                 min="0"
                                 name="weekend_work_hours"
+                                value="{{ latest_log.weekend_work_hours|default:4 }}"
                                 class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
-                                placeholder="4"
+                                required
                             >
                         </div>
                     </div>
 
                     <div>
                         <label class="mb-1.5 block text-xs font-bold text-slate-700">
-                            LMS Late-Night Activity Count
+                            LMS Late-Night Actions Count
                         </label>
                         <input
-                            x-model="form.lms_late_night_activity_count"
                             type="number"
                             min="0"
-                            name="lms_late_night_activity_count"
+                            name="lms_late_night_actions"
+                            value="{{ latest_log.lms_late_night_actions|default:8 }}"
                             class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#1E3A8A] focus:ring-4 focus:ring-blue-50"
-                            placeholder="8"
+                            required
                         >
                     </div>
 
@@ -541,7 +572,7 @@
                             type="range"
                             min="1"
                             max="5"
-                            name="perceived_support_rating"
+                            name="perceived_support"
                             class="w-full accent-[#1E3A8A]"
                         >
 
@@ -553,31 +584,10 @@
 
                     <button
                         type="submit"
-                        :disabled="predictionLoading"
-                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D2C54] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#1E3A8A] disabled:cursor-not-allowed disabled:opacity-70"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg bg-[#0D2C54] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#1E3A8A]"
                     >
-                        <svg
-                            x-show="predictionLoading"
-                            class="h-4 w-4 animate-spin"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                        >
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
-                        </svg>
-
-                        <span x-text="predictionLoading ? 'Running AI Prediction...' : 'Submit & Run AI Prediction'"></span>
+                        <span>Submit & Run AI Prediction</span>
                     </button>
-
-                    <div
-                        x-cloak
-                        x-show="predictionComplete"
-                        x-transition
-                        class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-700"
-                    >
-                        Prediction updated successfully. Your current projected risk is
-                        <span class="font-black">68% — Moderate</span>.
-                    </div>
                 </form>
             </div>
 
@@ -595,137 +605,62 @@
                     </div>
 
                     <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-[#1E3A8A]">
-                        4 Modules
+                        {{ modules_count|default:0 }} Modules
                     </span>
                 </div>
 
                 <div class="grid gap-3 p-5 sm:p-6 md:grid-cols-2">
 
-                    <!-- Module 1 -->
+                    {% for module in modules %}
                     <div class="rounded-xl border border-slate-200 p-4 transition hover:border-blue-200 hover:shadow-sm">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <span class="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[10px] font-black text-[#1E3A8A]">
-                                    BIT3102
+                                    {{ module.module_code }}
                                 </span>
                                 <h3 class="mt-2 text-sm font-black text-slate-800">
-                                    Database Systems
+                                    {{ module.module_name }}
                                 </h3>
                             </div>
 
                             <span class="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-black text-orange-700">
-                                2.0x Practical
+                                Weight: {{ module.difficulty_weight }}x
                             </span>
                         </div>
 
                         <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                             <span class="text-slate-500">Student roster</span>
-                            <span class="font-black text-slate-700">54 students</span>
+                            <span class="font-black text-slate-700">{{ module.student_count }} students</span>
                         </div>
                     </div>
-
-                    <!-- Module 2 -->
-                    <div class="rounded-xl border border-slate-200 p-4 transition hover:border-blue-200 hover:shadow-sm">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <span class="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[10px] font-black text-[#1E3A8A]">
-                                    BIT3204
-                                </span>
-                                <h3 class="mt-2 text-sm font-black text-slate-800">
-                                    Software Engineering
-                                </h3>
-                            </div>
-
-                            <span class="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black text-blue-700">
-                                1.5x Standard
-                            </span>
-                        </div>
-
-                        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                            <span class="text-slate-500">Student roster</span>
-                            <span class="font-black text-slate-700">48 students</span>
-                        </div>
+                    {% empty %}
+                    <div class="col-span-2 p-6 text-center text-xs text-slate-400">
+                        No module assignments recorded for this trimester.
                     </div>
+                    {% endfor %}
 
-                    <!-- Module 3 -->
-                    <div class="rounded-xl border border-slate-200 p-4 transition hover:border-blue-200 hover:shadow-sm">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <span class="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[10px] font-black text-[#1E3A8A]">
-                                    BIT3301
-                                </span>
-                                <h3 class="mt-2 text-sm font-black text-slate-800">
-                                    Web Application Development
-                                </h3>
-                            </div>
-
-                            <span class="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-black text-orange-700">
-                                2.0x Practical
-                            </span>
-                        </div>
-
-                        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                            <span class="text-slate-500">Student roster</span>
-                            <span class="font-black text-slate-700">42 students</span>
-                        </div>
-                    </div>
-
-                    <!-- Module 4 -->
-                    <div class="rounded-xl border border-slate-200 p-4 transition hover:border-blue-200 hover:shadow-sm">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <span class="inline-flex rounded-md bg-blue-50 px-2 py-1 text-[10px] font-black text-[#1E3A8A]">
-                                    BIT3402
-                                </span>
-                                <h3 class="mt-2 text-sm font-black text-slate-800">
-                                    Artificial Intelligence
-                                </h3>
-                            </div>
-
-                            <span class="rounded-full bg-purple-50 px-2.5 py-1 text-[10px] font-black text-purple-700">
-                                1.8x Research
-                            </span>
-                        </div>
-
-                        <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                            <span class="text-slate-500">Student roster</span>
-                            <span class="font-black text-slate-700">42 students</span>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Schedule -->
                 <div class="border-t border-slate-200 px-5 py-5 sm:px-6">
                     <div class="mb-4">
                         <h3 class="text-sm font-black text-[#0D2C54]">
-                            Upcoming Class Schedule
+                            Assigned Modules Summary
                         </h3>
                     </div>
 
                     <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                        {% for module in modules %}
                         <div class="rounded-lg bg-slate-50 p-3">
-                            <p class="text-[10px] font-black uppercase text-slate-400">Monday</p>
-                            <p class="mt-1 text-xs font-bold text-slate-700">BIT3102 · 08:00–10:00</p>
-                            <p class="mt-1 text-[10px] text-slate-500">Lab 2</p>
+                            <p class="text-[10px] font-black uppercase text-slate-400">{{ module.module_code }}</p>
+                            <p class="mt-1 text-xs font-bold text-slate-700">{{ module.module_name }}</p>
+                            <p class="mt-1 text-[10px] text-slate-500">{{ module.credit_units }} Credits · {{ module.student_count }} Students</p>
                         </div>
-
-                        <div class="rounded-lg bg-slate-50 p-3">
-                            <p class="text-[10px] font-black uppercase text-slate-400">Tuesday</p>
-                            <p class="mt-1 text-xs font-bold text-slate-700">BIT3204 · 10:00–12:00</p>
-                            <p class="mt-1 text-[10px] text-slate-500">Room B204</p>
+                        {% empty %}
+                        <div class="col-span-4 rounded-lg bg-slate-50 p-3 text-center text-xs text-slate-400">
+                            No modules assigned.
                         </div>
-
-                        <div class="rounded-lg bg-slate-50 p-3">
-                            <p class="text-[10px] font-black uppercase text-slate-400">Thursday</p>
-                            <p class="mt-1 text-xs font-bold text-slate-700">BIT3301 · 14:00–16:00</p>
-                            <p class="mt-1 text-[10px] text-slate-500">Lab 1</p>
-                        </div>
-
-                        <div class="rounded-lg bg-slate-50 p-3">
-                            <p class="text-[10px] font-black uppercase text-slate-400">Friday</p>
-                            <p class="mt-1 text-xs font-bold text-slate-700">BIT3402 · 09:00–11:00</p>
-                            <p class="mt-1 text-[10px] text-slate-500">Room A105</p>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -742,7 +677,7 @@
                         Personal Historical Workload Trend
                     </h2>
                     <p class="mt-1 text-xs text-slate-500">
-                        11-week view of estimated workload hours and self-reported fatigue.
+                        Historical view of estimated workload hours and self-reported fatigue.
                     </p>
                 </div>
 
@@ -767,6 +702,11 @@
     </main>
 
 
+    <!-- Dynamic data injected from Django context for ApexCharts -->
+    {{ trend_categories|json_script:"trend-categories" }}
+    {{ trend_hours|json_script:"trend-hours" }}
+    {{ trend_fatigue|json_script:"trend-fatigue" }}
+
     <!-- ============================================================
          SCRIPT
     ============================================================= -->
@@ -779,27 +719,10 @@
             return {
                 mobileMenu: false,
                 showSelfCheck: false,
-                predictionLoading: false,
-                predictionComplete: false,
 
                 form: {
-                    teaching_hours: 18,
-                    assignments_to_grade: 42,
-                    thesis_students_count: 7,
-                    weekend_work_hours: 4,
-                    lms_late_night_activity_count: 8,
-                    fatigue: 6,
-                    support: 3
-                },
-
-                submitPrediction() {
-                    this.predictionLoading = true;
-                    this.predictionComplete = false;
-
-                    setTimeout(() => {
-                        this.predictionLoading = false;
-                        this.predictionComplete = true;
-                    }, 1800);
+                    fatigue: {{ latest_log.self_reported_fatigue|default:5 }},
+                    support: {{ latest_log.perceived_support|default:3 }}
                 },
 
                 switchRole(event) {
@@ -811,18 +734,21 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            const categories = JSON.parse(document.getElementById('trend-categories').textContent || '[]');
+            const hoursData = JSON.parse(document.getElementById('trend-hours').textContent || '[]');
+            const fatigueData = JSON.parse(document.getElementById('trend-fatigue').textContent || '[]');
 
             const trendOptions = {
                 series: [
                     {
                         name: 'Weekly Hours',
                         type: 'line',
-                        data: [38, 40, 41.5, 39, 44, 46, 43.5, 48, 45, 47, 46.5]
+                        data: hoursData
                     },
                     {
                         name: 'Fatigue Score',
                         type: 'line',
-                        data: [3, 4, 4, 3, 5, 6, 5, 7, 6, 7, 6]
+                        data: fatigueData
                     }
                 ],
 
@@ -851,19 +777,7 @@
                 },
 
                 xaxis: {
-                    categories: [
-                        'Week 1',
-                        'Week 2',
-                        'Week 3',
-                        'Week 4',
-                        'Week 5',
-                        'Week 6',
-                        'Week 7',
-                        'Week 8',
-                        'Week 9',
-                        'Week 10',
-                        'Week 11'
-                    ],
+                    categories: categories,
                     labels: {
                         style: {
                             fontSize: '11px'
@@ -876,8 +790,8 @@
                         title: {
                             text: 'Hours'
                         },
-                        min: 25,
-                        max: 55,
+                        min: 0,
+                        max: 60,
                         tickAmount: 6
                     },
                     {
@@ -893,7 +807,7 @@
 
                 annotations: {
                     yaxis: [{
-                        y: 40,
+                        y: {{ target_hours|default:40 }},
                         borderColor: '#EAB308',
                         strokeDashArray: 5,
                         label: {
@@ -902,7 +816,7 @@
                                 color: '#FFFFFF',
                                 background: '#EAB308'
                             },
-                            text: '40h Target'
+                            text: '{{ target_hours|default:40 }}h Target'
                         }
                     }]
                 },

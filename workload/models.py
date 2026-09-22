@@ -53,6 +53,32 @@ class ModuleAssignment(models.Model):
         return f"{self.module_code} - {self.lecturer.user.get_full_name() or self.lecturer.user.username}"
 
 
+class LecturerLeave(models.Model):
+    """Approved or pending lecturer leave that may require teaching coverage."""
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        APPROVED = 'APPROVED', 'Approved'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    lecturer = models.ForeignKey(
+        LecturerProfile,
+        on_delete=models.CASCADE,
+        related_name='leave_records',
+    )
+    start_date = models.DateField()
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    classes_affected = models.PositiveIntegerField(default=0)
+    reason = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ['start_date']
+
+    def __str__(self):
+        return f"{self.lecturer.user.username} ({self.start_date} to {self.end_date})"
+
+
 class WorkloadLog(models.Model):
     """
     Weekly or Trimester Workload Entries used for calculating Burnout Index

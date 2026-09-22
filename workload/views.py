@@ -3,8 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Avg, Sum, Count, Q
 from django.http import JsonResponse
+from django.utils import timezone
+from collections import Counter
 
-from .models import LecturerProfile, WorkloadLog, ModuleAssignment
+from .models import LecturerLeave, LecturerProfile, WorkloadLog, ModuleAssignment
 from ml_engine.predictor import predict_workload_and_burnout
 
 
@@ -102,6 +104,7 @@ def hod_dashboard(request):
             'speciality': lec.major_speciality,
             'classes': int(lec.number_of_classes or 0),
             'hours': round(predicted_hours, 1),
+            'targetHours': int(lec.max_weekly_hours_target or 18),
             'score': int(risk_score),
             'risk': risk_category,
             'teachingHours': round(float(latest_log.teaching_hours or 0), 1) if latest_log else 0,
@@ -124,11 +127,52 @@ def hod_dashboard(request):
             'latest_log': latest_log,
         })
 
+    extra_teaching_hours = round(sum(
+        max(0.0, lecturer['hours'] - lecturer['targetHours'])
+        for lecturer in lecturer_payload
+    ), 1)
+    total_target_hours = sum(lecturer['targetHours'] for lecturer in lecturer_payload)
+    extra_teaching_exposure = round((extra_teaching_hours / total_target_hours) * 100, 1) if total_target_hours else 0.0
+    high_risk_lecturers = sum(
+        lecturer['risk'] in ('High', 'Critical')
+        for lecturer in lecturer_payload
+    )
+
+    approved_leave_records = LecturerLeave.objects.filter(
+        lecturer__department=department,
+        status=LecturerLeave.Status.APPROVED,
+        end_date__gte=timezone.localdate(),
+    ).select_related('lecturer__user')
+    leave_payload = [{
+        'lecturer': record.lecturer.user.get_full_name() or record.lecturer.user.username,
+        'startDate': record.start_date.strftime('%d %b %Y'),
+        'endDate': record.end_date.strftime('%d %b %Y'),
+        'classesAffected': record.classes_affected,
+        'status': record.get_status_display(),
+    } for record in approved_leave_records]
+    affected_classes = sum(record['classesAffected'] for record in leave_payload)
+    available_capacity_slots = sum(
+        max(0.0, lecturer['targetHours'] - lecturer['hours']) / 4
+        for lecturer in lecturer_payload
+    )
+    projected_coverage = round(
+        min(100.0, (available_capacity_slots / affected_classes) * 100)
+        if affected_classes else 100.0,
+        1,
+    )
+
     dashboard_stats = {
         'totalLecturers': total_lecturers,
         'avgHours': round(avg_hours, 1),
         'criticalAlerts': critical_alerts,
         'totalBacklogDays': total_backlog_days,
+        'extraTeachingHours': extra_teaching_hours,
+        'extraTeachingExposure': extra_teaching_exposure,
+        'highRiskLecturers': high_risk_lecturers,
+        'upcomingLeaveCount': len(leave_payload),
+        'affectedClasses': affected_classes,
+        'availableCapacitySlots': round(available_capacity_slots, 1),
+        'projectedCoverage': projected_coverage,
     }
 
     context = {
@@ -143,6 +187,7 @@ def hod_dashboard(request):
             'dashboardStats': dashboard_stats,
             'lecturers': lecturer_payload,
             'modules': module_payload,
+            'leaveRecords': leave_payload,
         },
     }
     return render(request, 'workload/hod_dashboard.html', context)
@@ -203,16 +248,32 @@ def apply_ai_rebalancing(request):
     department = profile.department
     lecturers = LecturerProfile.objects.filter(department=department).select_related('user')
     updated = []
+    before_risk_counts = Counter()
+    after_risk_counts = Counter()
+    risk_transitions = Counter()
+    workload_logs_updated = 0
+    classes_capped = 0
+    teaching_hours_reduced = 0.0
+    predicted_hours_reduced = 0.0
+    backlog_days_reduced = 0
 
     for lecturer in lecturers:
-        lecturer.number_of_classes = min(int(lecturer.number_of_classes or 1), 2)
+        original_classes = int(lecturer.number_of_classes or 1)
+        lecturer.number_of_classes = min(original_classes, 2)
+        classes_capped += int(original_classes > lecturer.number_of_classes)
         lecturer.max_weekly_hours_target = 18
         lecturer.save(update_fields=['number_of_classes', 'max_weekly_hours_target'])
 
         for log in lecturer.workload_logs.all():
-            log.teaching_hours = min(float(log.teaching_hours or 0), 15.0)
-            log.predicted_weekly_hours = min(float(log.predicted_weekly_hours or 0), 18.0)
-            log.grading_backlog_days = max(0, int(log.grading_backlog_days or 0) - 3)
+            previous_category = log.burnout_risk_category
+            previous_teaching_hours = float(log.teaching_hours or 0)
+            previous_predicted_hours = float(log.predicted_weekly_hours or 0)
+            previous_backlog_days = int(log.grading_backlog_days or 0)
+            before_risk_counts[previous_category] += 1
+
+            log.teaching_hours = min(previous_teaching_hours, 15.0)
+            log.predicted_weekly_hours = min(previous_predicted_hours, 18.0)
+            log.grading_backlog_days = max(0, previous_backlog_days - 3)
             log.burnout_risk_category = 'LOW' if log.predicted_weekly_hours <= 12.0 else 'MODERATE'
             log.burnout_risk_score = 25.0 if log.burnout_risk_category == 'LOW' else 48.0
             log.recommended_action = (
@@ -227,13 +288,31 @@ def apply_ai_rebalancing(request):
                 'burnout_risk_score',
                 'recommended_action'
             ])
+            after_risk_counts[log.burnout_risk_category] += 1
+            if previous_category != log.burnout_risk_category:
+                risk_transitions[f'{previous_category} to {log.burnout_risk_category}'] += 1
+            teaching_hours_reduced += previous_teaching_hours - log.teaching_hours
+            predicted_hours_reduced += previous_predicted_hours - log.predicted_weekly_hours
+            backlog_days_reduced += previous_backlog_days - log.grading_backlog_days
+            workload_logs_updated += 1
 
         updated.append(lecturer.user.username)
 
     return JsonResponse({
         'status': 'ok',
         'updated': updated,
-        'message': 'AI rebalancing persisted to the database. Lecturer workloads were capped to two classes and realistic weekly teaching hours, and overload states were reduced.'
+        'message': 'AI rebalancing persisted to the database. The audit summary below describes every applied change.',
+        'details': {
+            'lecturersUpdated': len(updated),
+            'workloadLogsUpdated': workload_logs_updated,
+            'classesCapped': classes_capped,
+            'teachingHoursReduced': round(teaching_hours_reduced, 1),
+            'predictedHoursReduced': round(predicted_hours_reduced, 1),
+            'backlogDaysReduced': backlog_days_reduced,
+            'beforeRiskCounts': dict(before_risk_counts),
+            'afterRiskCounts': dict(after_risk_counts),
+            'riskTransitions': dict(risk_transitions),
+        }
     })
 
 
@@ -258,7 +337,7 @@ def lecturer_dashboard(request):
     latest_log = logs.first()
 
     full_name = request.user.get_full_name() or request.user.username
-    first_name = request.user.first_name or full_name.split()[0] if full_name else request.user.username
+    first_name = request.user.first_name or (full_name.split()[0] if full_name else request.user.username)
     initials = ''.join(part[0].upper() for part in full_name.split()[:2]) if full_name else request.user.username[:2].upper()
     role_label = 'Academic Lecturer'
 
@@ -271,31 +350,22 @@ def lecturer_dashboard(request):
     target_hours = float(profile.max_weekly_hours_target or 40)
     over_target = max(0.0, workload_hours - target_hours)
 
-    dashboard_data = {
-        'user_full_name': full_name,
-        'user_first_name': first_name,
-        'user_initials': initials,
-        'user_role': role_label,
-        'profile_department': profile.department.name,
-        'profile_speciality': profile.major_speciality,
-        'assigned_classes': assigned_classes,
-        'total_students': total_students,
-        'modules_count': modules.count(),
-        'thesis_students': thesis_students,
-        'burnout_score': int(round(burnout_score)),
-        'burnout_label': burnout_label,
-        'workload_hours': round(workload_hours, 1),
-        'target_hours': target_hours,
-        'over_target_hours': round(over_target, 1),
-        'teaching_hours': float(latest_log.teaching_hours) if latest_log else 0.0,
-        'grading_hours': float(latest_log.grading_backlog_days) / 2.0 if latest_log else 0.0,
-        'thesis_hours': float(thesis_students) * 1.0,
-        'admin_hours': round(min(8.0, max(1.0, workload_hours * 0.08)), 1) if workload_hours else 0.0,
-    }
+    teaching_h = float(latest_log.teaching_hours) if latest_log else 0.0
+    grading_h = float(latest_log.grading_backlog_days) / 2.0 if latest_log else 0.0
+    thesis_h = float(thesis_students) * 1.0
+    admin_h = round(min(8.0, max(1.0, workload_hours * 0.08)), 1) if workload_hours else 0.0
+    research_h = round(max(0.0, workload_hours - (teaching_h + grading_h + thesis_h + admin_h)), 1)
+
+    # Historical trend lists for JavaScript chart
+    logs_reversed = list(reversed(list(logs)))
+    trend_categories = [f"Week {i+1}" for i in range(len(logs_reversed))] or ['Week 1']
+    trend_hours = [float(log.predicted_weekly_hours or 0) for log in logs_reversed] or [0]
+    trend_fatigue = [int(log.self_reported_fatigue or 0) for log in logs_reversed] or [0]
 
     # Handle Log Submission
     if request.method == 'POST':
         try:
+            # 1. Extract raw form inputs
             teaching_hours = float(request.POST.get('teaching_hours', 0))
             grading_backlog_days = int(request.POST.get('grading_backlog_days', 0))
             supervised_theses = int(request.POST.get('supervised_theses', 0))
@@ -304,21 +374,30 @@ def lecturer_dashboard(request):
             self_reported_fatigue = int(request.POST.get('self_reported_fatigue', 5))
             perceived_support = int(request.POST.get('perceived_support', 3))
 
-            # Feature dictionary for ML Engine
+            # 2. Build full feature dictionary matching ML Engine expected columns
             input_features = {
-                'teaching_hours': teaching_hours,
+                'department': profile.department.name if profile.department else 'Software Engineering',
+                'employment_type': profile.employment_type if hasattr(profile, 'employment_type') else 'FULL_TIME',
+                'years_experience': getattr(profile, 'years_experience', 5),
+                'number_of_classes': profile.number_of_classes or modules.count(),
+                'modules_count': modules.count(),
+                'total_students_enrolled': total_students,
+                'assessment_type_weight': 1.5,
+                'active_research_projects': 1,
+                'hod_administrative_hours': 0.0,
+                'teaching_hours_per_week': teaching_hours,
                 'grading_backlog_days': grading_backlog_days,
-                'supervised_theses': supervised_theses,
+                'thesis_students_count': supervised_theses,
                 'weekend_work_hours': weekend_work_hours,
-                'lms_late_night_actions': lms_late_night_actions,
+                'lms_activity_late_night_count': lms_late_night_actions,
                 'self_reported_fatigue': self_reported_fatigue,
-                'perceived_support': perceived_support,
+                'perceived_support_score': perceived_support,
             }
 
-            # Run ML Inference
+            # 3. Run ML Inference with complete feature set
             prediction = predict_workload_and_burnout(input_features)
 
-            # Persist Log Entry
+            # 4. Persist Log Entry to Database
             WorkloadLog.objects.create(
                 lecturer=profile,
                 teaching_hours=teaching_hours,
@@ -344,6 +423,29 @@ def lecturer_dashboard(request):
         'profile': profile,
         'modules': modules,
         'latest_log': latest_log,
-        'logs_history': reversed(list(logs)),
+        'logs_history': logs_reversed,
+        'user_full_name': full_name,
+        'user_first_name': first_name,
+        'user_initials': initials,
+        'user_role': role_label,
+        'profile_department': profile.department.name,
+        'profile_speciality': profile.major_speciality,
+        'assigned_classes': assigned_classes,
+        'total_students': total_students,
+        'modules_count': modules.count(),
+        'thesis_students': thesis_students,
+        'burnout_score': int(round(burnout_score)),
+        'burnout_label': burnout_label,
+        'workload_hours': round(workload_hours, 1),
+        'target_hours': target_hours,
+        'over_target_hours': round(over_target, 1),
+        'teaching_hours': teaching_h,
+        'grading_hours': grading_h,
+        'admin_hours': admin_h,
+        'thesis_hours': thesis_h,
+        'research_hours': research_h,
+        'trend_categories': trend_categories,
+        'trend_hours': trend_hours,
+        'trend_fatigue': trend_fatigue,
     }
     return render(request, 'workload/lecturer_dashboard.html', context)
